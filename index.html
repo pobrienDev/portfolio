@@ -281,6 +281,8 @@
   @media (max-width: 640px){
     .project-grid{ grid-template-columns: 1fr; }
   }
+  /* An odd card left alone on the last row spans both columns. */
+  .project-card:last-child:nth-child(even){ grid-column: 1 / -1; }
   .project-card{
     background: var(--surface);
     border: 1px solid var(--border);
@@ -623,6 +625,18 @@
         </ul>
       </div>
 
+      <div class="project-card">
+        <h3>Entra ID Infrastructure-as-Code</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
+        <div class="stack-tags">
+          <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>GitHub Actions (OIDC)</span>
+        </div>
+        <ul>
+          <li>Terraform provisioning the identity layer my Graph automation tools run on — app registration with least-privilege permissions and admin consent as code, a rotating client secret in Key Vault, and remote state in locked-down Azure Storage with the bootstrap step documented.</li>
+          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored secrets; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
+        </ul>
+      </div>
+
     </div>
   </div>
 </section>
@@ -645,7 +659,7 @@
       </div>
       <div class="skill-group">
         <h3>Tools &amp; Platforms</h3>
-        <p>Git/GitHub, GitHub Actions (CI/CD), Docker, REST APIs, JWT Auth, Microsoft Graph API, Microsoft Entra ID, Microsoft 365, Azure, Render</p>
+        <p>Git/GitHub, GitHub Actions (CI/CD), Terraform, Docker, REST APIs, JWT Auth, Microsoft Graph API, Microsoft Entra ID, Microsoft 365, Azure, Render</p>
       </div>
     </div>
   </div>
