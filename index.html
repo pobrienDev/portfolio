@@ -269,6 +269,46 @@
     border-radius: 4px;
   }
   .project-card .demo-link:hover{ background: var(--accent); color: var(--bg); }
+  .project-card .shot.gif img{ object-position: center; }
+
+  /* Featured (full-width) project */
+  .project-card.featured{
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    padding: 0;
+    overflow: hidden;
+  }
+  .project-card.featured .shot{
+    margin: 0;
+    aspect-ratio: auto;
+    border-radius: 0;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+  }
+  .project-card.featured .body{
+    padding: 24px 26px;
+    display: flex;
+    flex-direction: column;
+  }
+  .project-card.featured h3{ font-size: 19px; }
+  .featured-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  @media (max-width: 640px){
+    .project-card.featured{ grid-template-columns: 1fr; }
+    .project-card.featured .shot{
+      aspect-ratio: 16 / 10;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .project-card.featured .body{ padding: 22px; }
+  }
   .project-card h3{
     font-size: 16px;
     font-weight: 600;
@@ -435,9 +475,31 @@
     <h2>Projects</h2>
     <div class="project-grid">
 
+      <div class="project-card featured">
+        <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
+          <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
+        </a>
+        <div class="body">
+          <div class="featured-label">Featured</div>
+          <h3>DartMetrics</h3>
+          <div class="card-links">
+            <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
+            <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
+          </div>
+          <div class="stack-tags">
+            <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>JWT + Argon2</span><span>Docker</span>
+          </div>
+          <ul>
+            <li>Darts scoring platform for 501, Cricket, and Halve It against friends or bots, with a pure, framework-free scoring engine that's fully unit-tested in isolation.</li>
+            <li>Every dart thrown is stored individually; averages, checkout percentage, and 180 counts are all derived from raw events rather than stored aggregates.</li>
+            <li>Database check constraints reject impossible game states independent of application code; 250+ backend tests plus Playwright end-to-end coverage.</li>
+          </ul>
+        </div>
+      </div>
+
       <div class="project-card">
-        <a class="shot" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">
-          <img src="assets/ticket-system.jpg" alt="Ticket Management System dashboard showing filtered ticket list with priority, status, and category tags" loading="lazy" width="1280" height="1000">
+        <a class="shot gif" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">
+          <img src="assets/ticket-system.gif" alt="Animated demo of the Ticket Management System: signing in, filtering the queue, working a ticket, and reviewing its audit history" loading="lazy" width="880" height="620">
         </a>
         <h3>Ticket Management System</h3>
         <a class="repo-link" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">github.com/pobriendev/ticket-system</a>
@@ -476,8 +538,8 @@
       </div>
 
       <div class="project-card">
-        <a class="shot" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">
-          <img src="assets/ski-resort-explorer.jpg" alt="Ski Resort Explorer home page with search and resort cards" loading="lazy" width="1280" height="800">
+        <a class="shot gif" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">
+          <img src="assets/ski-resort-explorer.gif" alt="Animated demo of Ski Resort Explorer: searching resorts, browsing the map, and opening a resort detail page with live weather" loading="lazy" width="800" height="500">
         </a>
         <h3>Ski Resort Explorer</h3>
         <a class="repo-link" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">github.com/pobriendev/ski-resort-explorer</a>
@@ -487,25 +549,6 @@
         <ul>
           <li>Full-stack app built from scratch, exposing RESTful endpoints for search, filtering, and data aggregation, with a MySQL schema for fast search.</li>
           <li>Integrated OpenWeatherMap to serve real-time weather conditions and precipitation radar data.</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
-          <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
-        </a>
-        <h3>DartMetrics</h3>
-        <div class="card-links">
-          <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
-          <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
-        </div>
-        <div class="stack-tags">
-          <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>JWT + Argon2</span><span>Docker</span>
-        </div>
-        <ul>
-          <li>Darts scoring platform for 501, Cricket, and Halve It against friends or bots, with a pure, framework-free scoring engine that's fully unit-tested in isolation.</li>
-          <li>Every dart thrown is stored individually; averages, checkout percentage, and 180 counts are all derived from raw events rather than stored aggregates.</li>
-          <li>Database check constraints reject impossible game states independent of application code; 250+ backend tests plus Playwright end-to-end coverage.</li>
         </ul>
       </div>
 
