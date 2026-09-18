@@ -93,6 +93,14 @@
     transition: color 0.15s ease;
   }
   header.site-nav nav a:hover{ color: var(--text); }
+  header.site-nav nav a.nav-resume{
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin: -3px 0;
+  }
+  header.site-nav nav a.nav-resume:hover{ background: var(--accent); color: var(--bg); }
 
   @media (max-width: 560px){
     header.site-nav .wrap{ padding-left: 16px; padding-right: 16px; }
@@ -101,6 +109,7 @@
     header.site-nav nav a{ font-size: 13px; }
   }
   @media (max-width: 440px){
+    header.site-nav nav{ flex-wrap: wrap; row-gap: 8px; }
     header.site-nav .wrap{
       flex-direction: column;
       align-items: flex-start;
@@ -195,6 +204,7 @@
     color: var(--text);
     border-color: var(--accent);
   }
+  .hero-meta a.resume-link{ color: var(--accent); font-weight: 500; }
 
   /* ---------- Section shell ---------- */
   section{ padding: 64px 0; border-bottom: 1px solid var(--border); }
@@ -463,6 +473,7 @@
       <a href="#projects">Projects</a>
       <a href="#skills">Skills</a>
       <a href="#contact">Contact</a>
+      <a class="nav-resume" href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
     </nav>
   </div>
 </header>
@@ -488,6 +499,8 @@
       <span>Baltimore, MD</span>
       <a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a>
       <a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a>
+      <a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">linkedin.com/in/patrick-o-brien</a>
+      <a class="resume-link" href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF) &#8599;</a>
     </div>
   </div>
 </section>
@@ -656,6 +669,8 @@
   <div class="wrap">
     <div class="contact-line"><a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a></div>
     <div class="contact-line"><a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a></div>
+    <div class="contact-line"><a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">linkedin.com/in/patrick-o-brien</a></div>
+    <div class="contact-line"><a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a></div>
     <div class="contact-line">Baltimore, MD</div>
     <p class="fine-print">© <span id="year"></span> Patrick O'Brien</p>
   </div>
