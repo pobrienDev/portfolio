@@ -221,6 +221,42 @@
     display: flex;
     flex-direction: column;
   }
+  .project-card .shot{
+    display: block;
+    margin: -22px -22px 18px;
+    border-bottom: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    overflow: hidden;
+    background: var(--surface-2);
+    aspect-ratio: 16 / 10;
+  }
+  .project-card .shot img{
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    transition: transform 0.25s ease;
+  }
+  .project-card .shot:hover img{ transform: scale(1.02); }
+  .project-card .card-links{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-bottom: 14px;
+  }
+  .project-card .card-links .repo-link{ margin-bottom: 0; }
+  .project-card .demo-link{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--text);
+    text-decoration: none;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-dim);
+    padding: 1px 8px;
+    border-radius: 4px;
+  }
+  .project-card .demo-link:hover{ background: var(--accent); color: var(--bg); }
   .project-card h3{
     font-size: 16px;
     font-weight: 600;
@@ -388,6 +424,9 @@
     <div class="project-grid">
 
       <div class="project-card">
+        <a class="shot" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">
+          <img src="assets/ticket-system.jpg" alt="Ticket Management System dashboard showing filtered ticket list with priority, status, and category tags" loading="lazy" width="1280" height="1000">
+        </a>
         <h3>Ticket Management System</h3>
         <a class="repo-link" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">github.com/pobriendev/ticket-system</a>
         <div class="stack-tags">
@@ -425,6 +464,9 @@
       </div>
 
       <div class="project-card">
+        <a class="shot" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">
+          <img src="assets/ski-resort-explorer.jpg" alt="Ski Resort Explorer home page with search and resort cards" loading="lazy" width="1280" height="800">
+        </a>
         <h3>Ski Resort Explorer</h3>
         <a class="repo-link" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">github.com/pobriendev/ski-resort-explorer</a>
         <div class="stack-tags">
@@ -437,8 +479,14 @@
       </div>
 
       <div class="project-card">
+        <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
+          <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
+        </a>
         <h3>DartMetrics</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
+        <div class="card-links">
+          <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
+          <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
+        </div>
         <div class="stack-tags">
           <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>JWT + Argon2</span><span>Docker</span>
         </div>
@@ -495,7 +543,7 @@
   <div class="wrap">
     <div class="contact-line"><a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a></div>
     <div class="contact-line"><a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a></div>
-    <div class="contact-line">Henderson, MD</div>
+    <div class="contact-line">Baltimore, MD</div>
     <p class="fine-print">© <span id="year"></span> Patrick O'Brien</p>
   </div>
 </footer>
