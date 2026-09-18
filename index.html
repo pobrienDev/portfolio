@@ -4,8 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patrick O'Brien — Software Engineer</title>
-<meta name="description" content="Patrick O'Brien — Software Engineer building full-stack applications and identity/access automation against the Microsoft Graph API.">
-<link rel="icon" href="data:,">
+<meta name="description" content="Patrick O'Brien — Software Engineer in Baltimore, MD. Full-stack React + FastAPI apps and Python identity automation on the Microsoft Graph API.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/">
+<meta property="og:title" content="Patrick O'Brien — Software Engineer">
+<meta property="og:description" content="Full-stack React + FastAPI apps and Python identity automation on the Microsoft Graph API. Projects, live demo, and experience.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="DartMetrics live scoring screen, a full-stack darts app by Patrick O'Brien">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Patrick O'Brien — Software Engineer">
+<meta name="twitter:description" content="Full-stack React + FastAPI apps and Python identity automation on the Microsoft Graph API.">
+<meta name="twitter:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -132,6 +148,36 @@
     color: var(--text-dim);
     font-size: 16px;
     margin: 0 0 28px;
+  }
+  .hero p.summary a{
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+  }
+  .hero p.summary a:hover{ color: var(--accent); }
+  .hero-proof{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin: 0 0 28px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .hero-proof span{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+  }
+  .hero-proof span::before{
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 8px;
+    vertical-align: 1px;
   }
   .hero-meta{
     display: flex;
@@ -269,6 +315,11 @@
     border-radius: 4px;
   }
   .project-card .demo-link:hover{ background: var(--accent); color: var(--bg); }
+  .project-card .demo-note{
+    flex-basis: 100%;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
   .project-card .shot.gif img{ object-position: center; }
 
   /* Featured (full-width) project */
@@ -422,11 +473,17 @@
     <h1>Patrick O'Brien</h1>
     <p class="role">Software Engineer</p>
     <p class="summary">
-      B.S. in Computer Science building full-stack web applications — React front ends,
-      FastAPI/Flask APIs, SQL data layers with automated test coverage. Currently building
-      production Python automation against the Microsoft Graph API for 400+ users across
-      100+ properties.
+      I build full-stack web apps and identity automation. Right now that means automating
+      onboarding and offboarding for 400+ Microsoft 365 users across 100+ properties with
+      Python and the Microsoft Graph API, and shipping React + FastAPI apps like
+      <a href="#projects">DartMetrics</a> with hundreds of automated tests and CI/CD behind them.
     </p>
+    <div class="hero-proof mono">
+      <span>B.S. Computer Science</span>
+      <span>1 package on PyPI</span>
+      <span>500+ automated tests across projects</span>
+      <span>1 app live in production</span>
+    </div>
     <div class="hero-meta">
       <span>Baltimore, MD</span>
       <a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a>
@@ -485,6 +542,7 @@
           <div class="card-links">
             <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
             <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
+            <span class="demo-note">Free-tier host: first load can take ~30s to wake up.</span>
           </div>
           <div class="stack-tags">
             <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>JWT + Argon2</span><span>Docker</span>
@@ -562,19 +620,19 @@
     <div class="skills-grid">
       <div class="skill-group">
         <h3>Languages</h3>
-        <p>Python, JavaScript, Java, C++, C, HTML/CSS</p>
+        <p>Python, JavaScript, SQL, Java, C/C++, HTML/CSS</p>
       </div>
       <div class="skill-group">
         <h3>Frameworks</h3>
-        <p>React, FastAPI, Flask, SQLAlchemy</p>
+        <p>React, FastAPI, Flask, SQLAlchemy / Alembic, pytest, Playwright</p>
       </div>
       <div class="skill-group">
         <h3>Databases</h3>
-        <p>PostgreSQL, MySQL, SQLite, Microsoft Access, phpMyAdmin</p>
+        <p>PostgreSQL, MySQL, SQLite</p>
       </div>
       <div class="skill-group">
         <h3>Tools &amp; Platforms</h3>
-        <p>Git/GitHub, GitHub Actions (CI/CD), REST APIs, JWT Auth, pytest, Microsoft Graph API, Microsoft 365, Microsoft Entra ID, Azure</p>
+        <p>Git/GitHub, GitHub Actions (CI/CD), Docker, REST APIs, JWT Auth, Microsoft Graph API, Microsoft Entra ID, Microsoft 365, Azure, Render</p>
       </div>
     </div>
   </div>
