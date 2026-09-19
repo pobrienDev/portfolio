@@ -372,6 +372,57 @@
     }
     .project-card.featured .body{ padding: 22px; }
   }
+  /* Full-width text cards (CLI tools, infrastructure) */
+  .project-card{ min-width: 0; }  /* let wide <pre> blocks scroll instead of stretching the grid */
+  .project-card.wide{ grid-column: 1 / -1; }
+  .project-card.wide ul{ max-width: 78ch; flex-grow: 0; }
+
+  /* Terminal demo block */
+  .terminal{
+    min-width: 0;
+    max-width: 100%;
+    margin: 18px 0 0;
+    background: #0B0E13;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .terminal figcaption{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .terminal .dots{ display: inline-flex; gap: 6px; margin-right: 4px; }
+  .terminal .dots i{
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--border);
+  }
+  .terminal .t-note{ margin-left: auto; opacity: 0.7; }
+  .terminal pre{
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--text-dim);
+    white-space: pre;
+    tab-size: 4;
+  }
+  .terminal pre:focus-visible{ outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+  .terminal .t-p{ color: var(--accent); }
+  .terminal .t-c{ color: var(--text); }
+  .terminal .t-o{ color: var(--text); }
+  .terminal .t-hl{ color: var(--accent); }
+  @media (max-width: 560px){
+    .terminal .t-note{ display: none; }
+  }
   .project-card h3{
     font-size: 16px;
     font-weight: 600;
@@ -560,7 +611,7 @@
             <span class="demo-note">Free-tier host: first load can take ~30s to wake up.</span>
           </div>
           <div class="stack-tags">
-            <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>JWT + Argon2</span><span>Docker</span>
+            <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>TypeScript</span><span>JWT + Argon2</span><span>Docker</span>
           </div>
           <ul>
             <li>Darts scoring platform for 501, Cricket, and Halve It against friends or bots, with a pure, framework-free scoring engine that's fully unit-tested in isolation.</li>
@@ -591,30 +642,6 @@
       </div>
 
       <div class="project-card">
-        <h3>Employee Provisioning Tool</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
-        <div class="stack-tags">
-          <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
-        </div>
-        <ul>
-          <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
-          <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
-        <h3>Entra Stale Accounts</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/entra-stale-accounts" target="_blank" rel="noopener">github.com/pobriendev/entra-stale-accounts</a>
-        <div class="stack-tags">
-          <span>Python</span><span>Microsoft Graph API</span><span>PyPI</span>
-        </div>
-        <ul>
-          <li>Published a read-only CLI to PyPI (<span class="mono">pip install entra-stale-accounts</span>) flagging inactive Entra ID accounts past a configurable threshold, including never-signed-in accounts.</li>
-          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and Graph API retry/backoff.</li>
-        </ul>
-      </div>
-
-      <div class="project-card">
         <a class="shot gif" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">
           <img src="assets/ski-resort-explorer.gif" alt="Animated demo of Ski Resort Explorer: searching resorts, browsing the map, and opening a resort detail page with live weather" loading="lazy" width="800" height="500">
         </a>
@@ -629,7 +656,53 @@
         </ul>
       </div>
 
-      <div class="project-card">
+      <div class="project-card wide">
+        <h3>Employee Provisioning Tool</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
+        <div class="stack-tags">
+          <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
+        </div>
+        <ul>
+          <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
+          <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
+        </ul>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
+Terminating:
+<span class="t-o">  Property Manager at Elm Court  manager619@example.com                            [enabled]  Property Manager</span>
+  <span class="t-hl">[dry-run]</span> would disable the account and revoke every session
+  <span class="t-hl">[dry-run]</span> would remove from group: Elm Court Staff
+  <span class="t-hl">[dry-run]</span> would remove from group: Site Managers
+  <span class="t-hl">[dry-run]</span> would remove 1 license(s)
+  manual step if mail must be retained: convert the mailbox to shared (Exchange admin center)</pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
+        <h3>Entra Stale Accounts</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-stale-accounts" target="_blank" rel="noopener">github.com/pobriendev/entra-stale-accounts</a>
+        <div class="stack-tags">
+          <span>Python</span><span>Microsoft Graph API</span><span>PyPI</span>
+        </div>
+        <ul>
+          <li>Published a read-only CLI to PyPI (<span class="mono">pip install entra-stale-accounts</span>) flagging inactive Entra ID accounts past a configurable threshold, including never-signed-in accounts.</li>
+          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and Graph API retry/backoff.</li>
+        </ul>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>entra-stale-accounts<span class="t-note">sample run, placeholder data</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pip install entra-stale-accounts</span>
+<span class="t-p">$</span> <span class="t-c">entra-stale-accounts check --days 90</span>
+USER PRINCIPAL NAME            DISPLAY NAME  ENABLED  LAST SIGN-IN  DAYS
+-----------------------------  ------------  -------  ------------  -----
+nina@contoso.onmicrosoft.com   Never Nina    true     never         never
+sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
+
+<span class="t-o">2 stale account(s) past a 90-day threshold.</span></pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
         <h3>Entra ID Infrastructure-as-Code</h3>
         <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
         <div class="stack-tags">
@@ -651,7 +724,7 @@
     <div class="skills-grid">
       <div class="skill-group">
         <h3>Languages</h3>
-        <p>Python, JavaScript, SQL, Java, C/C++, HTML/CSS</p>
+        <p>Python, TypeScript, JavaScript, SQL, Java, C/C++, HTML/CSS</p>
       </div>
       <div class="skill-group">
         <h3>Frameworks</h3>
