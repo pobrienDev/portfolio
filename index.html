@@ -349,6 +349,16 @@
     border-bottom: none;
     border-right: 1px solid var(--border);
   }
+  /* Show the whole screenshot however tall the text column gets; the
+     backdrop matches the app's own background so the edges are seamless. */
+  .project-card.featured .shot{
+    background: #070A12;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .project-card.featured .shot img{ height: auto; object-fit: contain; }
+  .project-card.featured .shot img + img{ border-top: 1px solid var(--border); }
   .project-card.featured .body{
     padding: 24px 26px;
     display: flex;
@@ -365,6 +375,9 @@
   }
   @media (max-width: 640px){
     .project-card.featured{ grid-template-columns: 1fr; }
+    .project-card.featured .shot{ display: block; }
+    .project-card.featured .shot img{ height: 100%; object-fit: cover; object-position: top; }
+    .project-card.featured .shot img + img{ display: none; }
     .project-card.featured .shot{
       aspect-ratio: 16 / 10;
       border-right: none;
@@ -376,6 +389,29 @@
   .project-card{ min-width: 0; }  /* let wide <pre> blocks scroll instead of stretching the grid */
   .project-card.wide{ grid-column: 1 / -1; }
   .project-card.wide ul{ max-width: 78ch; flex-grow: 0; }
+
+  /* "Recent fix" note on a project card */
+  .fix-note{
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: 4px;
+  }
+  .project-card.wide .fix-note{ max-width: 78ch; }
+  .fix-note .fix-label{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: 8px;
+  }
+  .fix-note a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent-dim); white-space: nowrap; }
+  .fix-note a:hover{ color: var(--accent); }
 
   /* Terminal demo block */
   .terminal{
@@ -602,6 +638,7 @@
       <div class="project-card featured">
         <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
           <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
+          <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="1280" height="800">
         </a>
         <div class="body">
           <div class="featured-label">Featured</div>
@@ -619,6 +656,7 @@
             <li>Every dart thrown is stored individually; averages, checkout percentage, and 180 counts are all derived from raw events rather than stored aggregates.</li>
             <li>Database check constraints reject impossible game states independent of application code; 250+ backend tests plus Playwright end-to-end coverage.</li>
           </ul>
+          <p class="fix-note"><span class="fix-label">Recent fix</span>A Dockerfile layer-order bug reinstalled every dependency on each source edit. Reordering the layers cut rebuilds from about 31s to about 4s. <a href="https://github.com/pobrienDev/dartmetrics/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         </div>
       </div>
 
@@ -640,6 +678,7 @@
           <li>Designed the data model and REST API (FastAPI + SQLAlchemy/Alembic) covering CRUD, filtering, pagination, comments, and category management.</li>
           <li>176 backend tests (~96% coverage) and 128 frontend tests; CI/CD pipeline running tests and lint on every push, deploying on merge to main.</li>
         </ul>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>SLA due dates ignored priority changes, so an escalated ticket kept its old deadline. Fixed test-first: three new tests failed before the change. <a href="https://github.com/pobrienDev/ticket-system/pull/8" target="_blank" rel="noopener">See the PR &#8599;</a></p>
       </div>
 
       <div class="project-card">
@@ -667,6 +706,7 @@
           <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
           <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
         </ul>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>An unescaped apostrophe in generated PowerShell could break, or inject commands into, an Exchange admin session. Now escaped, with a test that feeds it a hostile address. <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
           <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
