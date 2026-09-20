@@ -652,8 +652,8 @@
           <span>React</span><span>Flask</span><span>MySQL</span><span>OpenWeatherMap API</span>
         </div>
         <ul>
-          <li>Full-stack app built from scratch, exposing RESTful endpoints for search, filtering, and data aggregation, with a MySQL schema for fast search.</li>
-          <li>Integrated OpenWeatherMap to serve real-time weather conditions and precipitation radar data.</li>
+          <li>Full-stack app built from scratch: a Flask REST API serving 433 resorts from a normalized MySQL schema, with name search and state filtering, behind a React front end with interactive maps.</li>
+          <li>Integrated OpenWeatherMap for live weather conditions and precipitation radar, proxied through Flask so the API key never reaches the browser.</li>
         </ul>
       </div>
 
@@ -711,7 +711,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         </div>
         <ul>
           <li>Terraform provisioning the identity layer my Graph automation tools run on — app registration with least-privilege permissions and admin consent as code, a rotating client secret in Key Vault, and remote state in locked-down Azure Storage with the bootstrap step documented.</li>
-          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored secrets; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
+          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
         </ul>
       </div>
 
