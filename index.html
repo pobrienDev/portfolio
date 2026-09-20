@@ -654,7 +654,7 @@
           <ul>
             <li>Darts scoring platform for 501, Cricket, and Halve It against friends or bots, with a pure, framework-free scoring engine that's fully unit-tested in isolation.</li>
             <li>Every dart thrown is stored individually; averages, checkout percentage, and 180 counts are all derived from raw events rather than stored aggregates.</li>
-            <li>Database check constraints reject impossible game states independent of application code; 250+ backend tests plus Playwright end-to-end coverage.</li>
+            <li>Database check constraints reject impossible game states independent of application code; 260+ backend tests plus Playwright end-to-end coverage.</li>
           </ul>
           <p class="fix-note"><span class="fix-label">Recent fix</span>A Dockerfile layer-order bug reinstalled every dependency on each source edit. Reordering the layers cut rebuilds from about 31s to about 4s. <a href="https://github.com/pobrienDev/dartmetrics/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         </div>
@@ -676,7 +676,7 @@
         <ul>
           <li>Full-stack helpdesk ticketing app with JWT auth, role-based access control, and an automatic audit trail on every status and assignment change.</li>
           <li>Designed the data model and REST API (FastAPI + SQLAlchemy/Alembic) covering CRUD, filtering, pagination, comments, and category management.</li>
-          <li>176 backend tests (~96% coverage) and 128 frontend tests; CI/CD pipeline running tests and lint on every push, deploying on merge to main.</li>
+          <li>175+ backend tests (~96% coverage) and 125+ frontend tests; CI/CD pipeline running tests and lint on every push, deploying on merge to main.</li>
         </ul>
         <p class="fix-note"><span class="fix-label">Recent fix</span>SLA due dates ignored priority changes, so an escalated ticket kept its old deadline. Fixed test-first: three new tests failed before the change. <a href="https://github.com/pobrienDev/ticket-system/pull/8" target="_blank" rel="noopener">See the PR &#8599;</a></p>
       </div>
