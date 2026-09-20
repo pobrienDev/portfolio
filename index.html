@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Patrick O'Brien — Software Engineer</title>
-<meta name="description" content="Patrick O'Brien — Software Engineer in Baltimore, MD. Python identity automation on Microsoft Graph and Entra ID, full-stack React + FastAPI apps, and Terraform on Azure.">
+<title>Patrick O'Brien — Identity &amp; Access Automation</title>
+<meta name="description" content="Patrick O'Brien — identity and access automation engineer in Baltimore, MD. Microsoft Entra ID and Graph API automation in Python, Terraform on Azure, and full-stack React + FastAPI apps.">
 <link rel="canonical" href="https://pobriendev.github.io/portfolio/">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -12,15 +12,15 @@
 <meta name="theme-color" content="#10141A">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pobriendev.github.io/portfolio/">
-<meta property="og:title" content="Patrick O'Brien — Software Engineer">
-<meta property="og:description" content="Python identity automation on Microsoft Graph and Entra ID, full-stack React + FastAPI apps, and Terraform on Azure. Projects, live demos, and experience.">
+<meta property="og:title" content="Patrick O'Brien — Identity &amp; Access Automation">
+<meta property="og:description" content="Microsoft Entra ID and Graph API automation in Python, Terraform on Azure, and full-stack React + FastAPI apps. Projects, live demos, and experience.">
 <meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="DartMetrics live scoring screen, a full-stack darts app by Patrick O'Brien">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Patrick O'Brien — Software Engineer">
-<meta name="twitter:description" content="Python identity automation on Microsoft Graph and Entra ID, full-stack React + FastAPI apps, and Terraform on Azure.">
+<meta name="twitter:title" content="Patrick O'Brien — Identity &amp; Access Automation">
+<meta name="twitter:description" content="Microsoft Entra ID and Graph API automation in Python, Terraform on Azure, and full-stack React + FastAPI apps.">
 <meta name="twitter:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -281,8 +281,6 @@
   @media (max-width: 640px){
     .project-grid{ grid-template-columns: 1fr; }
   }
-  /* An odd card left alone on the last row spans both columns. */
-  .project-card:last-child:nth-child(even){ grid-column: 1 / -1; }
   .project-card{
     background: var(--surface);
     border: 1px solid var(--border);
@@ -571,13 +569,14 @@
   <div class="wrap">
     <div class="terminal-line mono" id="terminalLine"></div>
     <h1>Patrick O'Brien</h1>
-    <p class="role">Software Engineer</p>
+    <p class="role">Identity &amp; Access Automation &middot; Microsoft Entra ID / Azure</p>
     <p class="summary">
-      I build identity and access automation and full-stack web apps, plus the
-      infrastructure-as-code underneath them. Right now that means automating Microsoft Entra ID
-      onboarding and offboarding for 400+ users across 100+ properties with Python and the
-      Microsoft Graph API, and shipping React + FastAPI apps like
-      <a href="#projects">DartMetrics</a> with 700+ automated tests and CI/CD behind them.
+      I automate the identity layer &mdash; and the infrastructure underneath it. Right now that
+      means automating Microsoft Entra ID onboarding and offboarding for 400+ users across 100+
+      properties with Python and the Microsoft Graph API, and provisioning the app registrations,
+      permissions and secret storage those tools run on as
+      <a href="#projects">Terraform</a>. I build full-stack apps too, with 700+ automated tests
+      and CI/CD behind them.
     </p>
     <div class="hero-proof mono">
       <span>B.S. Computer Science</span>
@@ -634,6 +633,80 @@
   <div class="wrap">
     <h2>Projects</h2>
     <div class="project-grid">
+      <div class="project-card wide">
+        <div class="featured-label">Featured</div>
+        <h3>Entra ID Infrastructure-as-Code</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
+        <div class="stack-tags">
+          <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span>
+        </div>
+        <ul>
+          <li>Terraform provisioning the identity layer my Graph automation tools run on &mdash; app registration with least-privilege permissions and admin consent as code, a rotating client secret in Key Vault, and remote state in locked-down Azure Storage with the bootstrap step documented.</li>
+          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
+          <li>The permissions that reset passwords and remove MFA methods sit behind a flag, off by default &mdash; a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</li>
+        </ul>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>CI&rsquo;s plan disagreed with mine on identical code and state: the config set each resource&rsquo;s owner to whoever ran Terraform, so CI proposed making itself the owner of everything. The owner is now an explicit input. <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">See the PR &#8599;</a></p>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">after deleting the resource group by hand</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
+azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
+
+<span class="t-hl">  # azurerm_resource_group.main will be created</span>
+<span class="t-o">  + resource "azurerm_resource_group" "main" {
+      + location = "westus2"
+      + name     = "rg-entra-iac"
+    }</span>
+
+<span class="t-o">Plan: 1 to add, 0 to change, 0 to destroy.</span></pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
+        <h3>Employee Provisioning Tool</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
+        <div class="stack-tags">
+          <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
+        </div>
+        <ul>
+          <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
+          <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
+        </ul>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>An unescaped apostrophe in generated PowerShell could break, or inject commands into, an Exchange admin session. Now escaped, with a test that feeds it a hostile address. <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
+Terminating:
+<span class="t-o">  Property Manager at Elm Court  manager619@example.com                            [enabled]  Property Manager</span>
+  <span class="t-hl">[dry-run]</span> would disable the account and revoke every session
+  <span class="t-hl">[dry-run]</span> would remove from group: Elm Court Staff
+  <span class="t-hl">[dry-run]</span> would remove from group: Site Managers
+  <span class="t-hl">[dry-run]</span> would remove 1 license(s)
+  manual step if mail must be retained: convert the mailbox to shared (Exchange admin center)</pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
+        <h3>Entra Stale Accounts</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-stale-accounts" target="_blank" rel="noopener">github.com/pobriendev/entra-stale-accounts</a>
+        <div class="stack-tags">
+          <span>Python</span><span>Microsoft Graph API</span><span>PyPI</span>
+        </div>
+        <ul>
+          <li>Published a read-only CLI to PyPI (<span class="mono">pip install entra-stale-accounts</span>) flagging inactive Entra ID accounts past a configurable threshold, including never-signed-in accounts.</li>
+          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and Graph API retry/backoff.</li>
+        </ul>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>entra-stale-accounts<span class="t-note">sample run, placeholder data</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pip install entra-stale-accounts</span>
+<span class="t-p">$</span> <span class="t-c">entra-stale-accounts check --days 90</span>
+USER PRINCIPAL NAME            DISPLAY NAME  ENABLED  LAST SIGN-IN  DAYS
+-----------------------------  ------------  -------  ------------  -----
+nina@contoso.onmicrosoft.com   Never Nina    true     never         never
+sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
+
+<span class="t-o">2 stale account(s) past a 90-day threshold.</span></pre>
+        </figure>
+      </div>
 
       <div class="project-card featured">
         <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
@@ -641,7 +714,6 @@
           <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="1280" height="800">
         </a>
         <div class="body">
-          <div class="featured-label">Featured</div>
           <h3>DartMetrics</h3>
           <div class="card-links">
             <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
@@ -696,65 +768,6 @@
         </ul>
       </div>
 
-      <div class="project-card wide">
-        <h3>Employee Provisioning Tool</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
-        <div class="stack-tags">
-          <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
-        </div>
-        <ul>
-          <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
-          <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
-        </ul>
-        <p class="fix-note"><span class="fix-label">Recent fix</span>An unescaped apostrophe in generated PowerShell could break, or inject commands into, an Exchange admin session. Now escaped, with a test that feeds it a hostile address. <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
-        <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
-          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
-Terminating:
-<span class="t-o">  Property Manager at Elm Court  manager619@example.com                            [enabled]  Property Manager</span>
-  <span class="t-hl">[dry-run]</span> would disable the account and revoke every session
-  <span class="t-hl">[dry-run]</span> would remove from group: Elm Court Staff
-  <span class="t-hl">[dry-run]</span> would remove from group: Site Managers
-  <span class="t-hl">[dry-run]</span> would remove 1 license(s)
-  manual step if mail must be retained: convert the mailbox to shared (Exchange admin center)</pre>
-        </figure>
-      </div>
-
-      <div class="project-card wide">
-        <h3>Entra Stale Accounts</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/entra-stale-accounts" target="_blank" rel="noopener">github.com/pobriendev/entra-stale-accounts</a>
-        <div class="stack-tags">
-          <span>Python</span><span>Microsoft Graph API</span><span>PyPI</span>
-        </div>
-        <ul>
-          <li>Published a read-only CLI to PyPI (<span class="mono">pip install entra-stale-accounts</span>) flagging inactive Entra ID accounts past a configurable threshold, including never-signed-in accounts.</li>
-          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and Graph API retry/backoff.</li>
-        </ul>
-        <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>entra-stale-accounts<span class="t-note">sample run, placeholder data</span></figcaption>
-          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pip install entra-stale-accounts</span>
-<span class="t-p">$</span> <span class="t-c">entra-stale-accounts check --days 90</span>
-USER PRINCIPAL NAME            DISPLAY NAME  ENABLED  LAST SIGN-IN  DAYS
------------------------------  ------------  -------  ------------  -----
-nina@contoso.onmicrosoft.com   Never Nina    true     never         never
-sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
-
-<span class="t-o">2 stale account(s) past a 90-day threshold.</span></pre>
-        </figure>
-      </div>
-
-      <div class="project-card wide">
-        <h3>Entra ID Infrastructure-as-Code</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
-        <div class="stack-tags">
-          <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>GitHub Actions (OIDC)</span>
-        </div>
-        <ul>
-          <li>Terraform provisioning the identity layer my Graph automation tools run on — app registration with least-privilege permissions and admin consent as code, a rotating client secret in Key Vault, and remote state in locked-down Azure Storage with the bootstrap step documented.</li>
-          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
-        </ul>
-      </div>
-
     </div>
   </div>
 </section>
@@ -764,20 +777,20 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
     <h2>Skills</h2>
     <div class="skills-grid">
       <div class="skill-group">
-        <h3>Languages</h3>
-        <p>Python, TypeScript, JavaScript, PowerShell, SQL, Java, C/C++, HTML/CSS</p>
+        <h3>Identity &amp; Cloud</h3>
+        <p>Microsoft Entra ID (Azure AD), Microsoft Graph API, Microsoft 365, Exchange Online, Azure, Azure Key Vault, user lifecycle management, role-based access control, least-privilege access, OIDC workload identity federation</p>
       </div>
       <div class="skill-group">
-        <h3>Frameworks</h3>
-        <p>React, FastAPI, Flask, SQLAlchemy / Alembic, pytest, Playwright</p>
+        <h3>Automation &amp; Infrastructure</h3>
+        <p>Python, PowerShell, Terraform, infrastructure as code, Docker, GitHub Actions (CI/CD), Git/GitHub, REST APIs</p>
       </div>
       <div class="skill-group">
-        <h3>Databases</h3>
-        <p>PostgreSQL, MySQL, SQLite</p>
+        <h3>Languages &amp; Frameworks</h3>
+        <p>Python, TypeScript, JavaScript, SQL, Java, C/C++, React, FastAPI, Flask, SQLAlchemy / Alembic</p>
       </div>
       <div class="skill-group">
-        <h3>Tools &amp; Platforms</h3>
-        <p>Git/GitHub, GitHub Actions (CI/CD), Terraform, Docker, REST APIs, JWT Auth, Microsoft Graph API, Microsoft Entra ID, Microsoft 365, Azure, Render</p>
+        <h3>Data &amp; Testing</h3>
+        <p>PostgreSQL, MySQL, SQLite, pytest, Vitest, Playwright, JWT auth</p>
       </div>
     </div>
   </div>
