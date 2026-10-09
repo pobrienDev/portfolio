@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OG card source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+  /* Source for assets/og-image.jpg. Render at exactly 1200x630:
+     chrome --headless=new --screenshot=og.png --window-size=1200,630 --virtual-time-budget=6000 file://.../tools/og-card.html
+     then: sips -s format jpeg -s formatOptions 88 og.png --out assets/og-image.jpg */
+  :root{
+    --bg:#10141A; --surface:#171D26; --border:#2A323F; --text:#E7EBEF; --text-dim:#94A1B2;
+    --accent:#E8A33D; --accent-2:#5CC4CF;
+  }
+  html,body{ margin:0; width:1200px; height:630px; overflow:hidden; background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+  .card{ position:relative; width:1200px; height:630px; padding:64px 84px 56px; box-sizing:border-box; }
+  .card::before{ content:""; position:absolute; inset:0;
+    background-image:radial-gradient(var(--border) 1.6px, transparent 2.2px); background-size:34px 34px;
+    -webkit-mask-image:radial-gradient(ellipse 70% 90% at 30% 35%, #000 10%, transparent 75%); }
+  .card::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:6px;
+    background:linear-gradient(90deg, var(--accent) 0 50%, var(--accent-2) 50% 100%); }
+  .in{ position:relative; height:100%; display:flex; flex-direction:column; }
+  .prompt{ font-family:'IBM Plex Mono',monospace; color:var(--accent); font-size:26px; margin-bottom:26px; }
+  .prompt i{ display:inline-block; width:14px; height:28px; background:var(--accent); vertical-align:-4px; margin-left:4px; }
+  h1{ margin:0 0 14px; font-size:84px; line-height:1; letter-spacing:-0.02em; font-weight:700; }
+  .role{ color:var(--accent); font-size:36px; font-weight:500; margin:0 0 30px; }
+  .sum{ color:var(--text-dim); font-size:27px; line-height:1.4; max-width:880px; margin:0; }
+  .chips{ margin-top:auto; display:flex; gap:14px; font-family:'IBM Plex Mono',monospace; font-size:20px; color:var(--text-dim); white-space:nowrap; }
+  .chips span{ background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 18px; }
+  .chips span::before{ content:""; display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--accent); margin-right:12px; vertical-align:1px; }
+  .chips span.fs::before{ background:var(--accent-2); }
+  .url{ margin-top:26px; font-family:'IBM Plex Mono',monospace; font-size:20px; color:var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="card"><div class="in">
+  <div class="prompt">$ whoami<i></i></div>
+  <h1>Patrick O'Brien</h1>
+  <p class="role">Software Engineer &middot; Identity &amp; Access Automation</p>
+  <p class="sum">Microsoft Entra ID and Graph API automation in Python, Terraform on Azure, and full-stack React + FastAPI apps.</p>
+  <div class="chips">
+    <span>Entra ID &middot; Graph API</span>
+    <span>Terraform &middot; Azure</span>
+    <span class="fs">React &middot; FastAPI</span>
+    <span class="fs">2 apps live</span>
+  </div>
+  <div class="url">pobriendev.github.io/portfolio</div>
+</div></div>
+</body>
+</html>
