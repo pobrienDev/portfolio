@@ -444,42 +444,15 @@
   .project-card li:last-child{ margin-bottom: 0; }
 
   /* ---------- About ---------- */
-  .about-grid{
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 40px;
-  }
-  @media (max-width: 640px){ .about-grid{ grid-template-columns: 1fr; gap: 28px; } }
   .about-text p{
     margin: 0 0 16px;
     color: var(--text-dim);
     font-size: 15px;
-    max-width: 60ch;
+    max-width: 68ch;
   }
   .about-text p:last-child{ margin-bottom: 0; }
   .about-text a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
   .about-text a:hover{ color: var(--accent); }
-  .about-facts h3{
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-    font-weight: 600;
-    margin: 0 0 10px;
-  }
-  .about-facts h3 + .roles{ margin-bottom: 22px; }
-  .roles{ list-style: none; margin: 0; padding: 0; }
-  .roles li{
-    display: grid;
-    grid-template-columns: 92px 1fr;
-    gap: 12px;
-    font-size: 14px;
-    color: var(--text);
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .roles li:last-child{ border-bottom: none; }
-  .roles .when{ font-size: 12px; color: var(--accent); padding-top: 2px; white-space: nowrap; }
 
   /* ---------- Footer ---------- */
   footer{
@@ -705,19 +678,6 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
           React, FastAPI, and PostgreSQL on the application side, with tests and CI behind all of it. The full
           history is in the <a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">resume</a>.
         </p>
-      </div>
-      <div class="about-facts">
-        <h3>Roles</h3>
-        <ul class="roles">
-          <li><span class="when mono">2025 &mdash; now</span><span>IT Support Specialist, Habitat America</span></li>
-          <li><span class="when mono">2019 &mdash; 2025</span><span>Operations &amp; Database Manager, Mike&rsquo;s Mowing</span></li>
-          <li><span class="when mono">2013 &mdash; 2019</span><span>Job Coach, Benedictine</span></li>
-        </ul>
-        <h3>Education</h3>
-        <ul class="roles">
-          <li><span class="when mono">2025</span><span>B.S. Computer Science, Delaware State University</span></li>
-          <li><span class="when mono">2020</span><span>A.S. Computing &amp; Information Science, Delaware Technical Community College</span></li>
-        </ul>
       </div>
     </div>
   </div>
