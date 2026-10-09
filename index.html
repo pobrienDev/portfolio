@@ -572,11 +572,11 @@
     <p class="role">Software Engineer &middot; Identity &amp; Access Automation</p>
     <p class="summary">
       I&rsquo;m a software engineer who automates the identity layer &mdash; and the infrastructure underneath it. Right now that
-      means automating Microsoft Entra ID onboarding and offboarding for 400+ users across 100+
-      properties with Python and the Microsoft Graph API, and provisioning the app registrations,
-      permissions and secret storage those tools run on as
-      <a href="#projects">Terraform</a>. I also build and ship full-stack apps in React and FastAPI,
-      with 700+ automated tests and CI/CD behind them.
+      means automating Microsoft Entra ID onboarding and offboarding in a 400+-user, 100+-property
+      Microsoft 365 tenant with Python and the Microsoft Graph API. Separately, I codified that same
+      identity layer as <a href="#projects">Terraform</a> in a personal sandbox tenant: the app registration,
+      its Graph permissions and consent, secret storage, and the CI that plans every change. I also build
+      and ship full-stack apps in React and FastAPI, both live, with CI/CD behind them.
     </p>
     <div class="hero-proof mono">
       <span>B.S. Computer Science</span>
@@ -588,7 +588,7 @@
       <span>Baltimore, MD</span>
       <a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a>
       <a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a>
-      <a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">linkedin.com/in/patrick-o-brien</a>
+      <a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">LinkedIn</a>
       <a class="resume-link" href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF) &#8599;</a>
     </div>
   </div>
@@ -603,14 +603,14 @@
         <h3>IT Support Specialist</h3>
         <div class="org">Habitat America · Annapolis, MD</div>
         <ul>
-          <li>Building a Python automation tool using the Microsoft Graph API to fully automate user provisioning and deprovisioning across 100+ properties and 400+ users, reducing onboarding to a single automated workflow.</li>
+          <li>Built a Python tool on the Microsoft Graph API that automates the Graph side of onboarding and offboarding in a single command &mdash; account creation or role-account reuse, licensing, group membership, and lockout-first offboarding &mdash; and prints the remaining Exchange steps ready to paste. Runs against a 400+-user, 100+-property Microsoft 365 tenant.</li>
           <li>Administer and maintain Microsoft 365, Microsoft Entra ID, and Exchange environments supporting 400+ users across 100+ managed properties.</li>
           <li>Diagnose and resolve technical issues across systems and applications, applying structured, engineering-driven problem-solving under time constraints.</li>
         </ul>
       </div>
       <div class="timeline-item">
         <div class="timeline-date">Mar 2019 — May 2025</div>
-        <h3>Database Administrator</h3>
+        <h3>Operations &amp; Database Manager</h3>
         <div class="org">Mike's Mowing (family business) · Ridgely, MD</div>
         <ul>
           <li>Independently designed, built, and maintained a Microsoft Access database covering customer records, service history, and scheduling.</li>
@@ -641,13 +641,13 @@
           <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span>
         </div>
         <ul>
-          <li>Terraform provisioning the identity layer my Graph automation tools run on &mdash; app registration with least-privilege permissions and admin consent as code, a rotating client secret in Key Vault, and remote state in locked-down Azure Storage with the bootstrap step documented.</li>
-          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a read-only identity and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
+          <li>Terraform that codifies, in a personal sandbox tenant, the identity layer my Graph tools need &mdash; app registration with scoped Graph application permissions and admin consent as code, a 180-day client secret in Key Vault replaced on the next apply, and remote state in Azure Storage with Entra-only auth, shared-key access disabled, versioning and soft delete, and the bootstrap step documented.</li>
+          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a CI identity that holds no Azure write roles, and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
           <li>The permissions that reset passwords and remove MFA methods sit behind a flag, off by default &mdash; a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</li>
         </ul>
         <p class="fix-note"><span class="fix-label">Recent fix</span>CI&rsquo;s plan disagreed with mine on identical code and state: the config set each resource&rsquo;s owner to whoever ran Terraform, so CI proposed making itself the owner of everything. The owner is now an explicit input. <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">after deleting the resource group by hand</span></figcaption>
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">captured after the first apply (7 resources); the config has grown since</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
 azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
 
@@ -668,10 +668,10 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
           <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
         </div>
         <ul>
-          <li>Python CLI automating Entra ID onboarding and offboarding end-to-end — account creation, license assignment, group membership, credential delivery.</li>
-          <li>App-only (client-credentials) auth scoped to least-privilege Graph permissions, with dry-run mode, lockout-first offboarding, and a full audit log.</li>
+          <li>Python CLI that automates the Graph side of Entra ID onboarding and offboarding in one command — account creation or reuse, license assignment, group membership, and a drafted credential email — and prints the remaining Exchange steps ready to paste.</li>
+          <li>App-only (client-credentials) auth for every directory write, with operator sign-in only for email drafts and Exchange steps; scoped Graph application permissions, dry-run mode, lockout-first offboarding, and an audit log of every completed write.</li>
         </ul>
-        <p class="fix-note"><span class="fix-label">Recent fix</span>An unescaped apostrophe in generated PowerShell could break, or inject commands into, an Exchange admin session. Now escaped, with a test that feeds it a hostile address. <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>An unescaped apostrophe in generated PowerShell could break, or inject commands into, an Exchange admin session. Now escaped through one shared helper that covers ASCII and typographic quotes, with a test that feeds it a hostile address. <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
           <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
@@ -693,7 +693,7 @@ Terminating:
         </div>
         <ul>
           <li>Published a read-only CLI to PyPI (<span class="mono">pip install entra-stale-accounts</span>) flagging inactive Entra ID accounts past a configurable threshold, including never-signed-in accounts.</li>
-          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and Graph API retry/backoff.</li>
+          <li>Generalized from production account-lifecycle automation into a standalone package with a mocked test suite, CI via GitHub Actions, and honors Graph&rsquo;s Retry-After on throttling.</li>
         </ul>
         <figure class="terminal">
           <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>entra-stale-accounts<span class="t-note">sample run, placeholder data</span></figcaption>
@@ -718,7 +718,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
           <div class="card-links">
             <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
             <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
-            <span class="demo-note">Free-tier host: first load can take ~30s to wake up.</span>
+            <span class="demo-note">Free-tier host: first load can take a minute or two while the host wakes.</span>
           </div>
           <div class="stack-tags">
             <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>TypeScript</span><span>JWT + Argon2</span><span>Docker</span>
@@ -740,7 +740,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         <div class="card-links">
           <a class="repo-link" href="https://github.com/pobriendev/ticket-system" target="_blank" rel="noopener">github.com/pobriendev/ticket-system</a>
           <a class="demo-link" href="https://ticket-system-azure-omega.vercel.app" target="_blank" rel="noopener">Live demo &#8599;</a>
-          <span class="demo-note">Free-tier host: first request can take up to a minute while the API wakes.</span>
+          <span class="demo-note">Free-tier host: first request can take a minute or two while the API wakes.</span>
         </div>
         <div class="stack-tags">
           <span>React (Vite)</span><span>FastAPI</span><span>PostgreSQL</span><span>JWT</span><span>GitHub Actions</span>
@@ -748,7 +748,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         <ul>
           <li>Full-stack helpdesk ticketing app with JWT auth, role-based access control, and an automatic audit trail on every status and assignment change.</li>
           <li>Designed the data model and REST API (FastAPI + SQLAlchemy/Alembic) covering CRUD, filtering, pagination, comments, and category management.</li>
-          <li>175+ backend tests (~96% coverage) and 125+ frontend tests; CI/CD pipeline running tests and lint on every push, deploying on merge to main.</li>
+          <li>175+ backend tests (~96% coverage, CI fails under 85%) and 135+ frontend tests; CI runs tests and lint on every push, and the API deploys only after CI passes on main.</li>
         </ul>
         <p class="fix-note"><span class="fix-label">Recent fix</span>SLA due dates ignored priority changes, so an escalated ticket kept its old deadline. Fixed test-first: three new tests failed before the change. <a href="https://github.com/pobrienDev/ticket-system/pull/8" target="_blank" rel="noopener">See the PR &#8599;</a></p>
       </div>
@@ -763,7 +763,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
           <span>React</span><span>Flask</span><span>MySQL</span><span>OpenWeatherMap API</span>
         </div>
         <ul>
-          <li>Full-stack app built from scratch: a Flask REST API serving 433 resorts from a normalized MySQL schema, with name search and state filtering, behind a React front end with interactive maps.</li>
+          <li>Full-stack app built from scratch: a Flask REST API serving 423 resorts from a normalized MySQL schema, with name search and state filtering, behind a React front end with interactive maps.</li>
           <li>Integrated OpenWeatherMap for live weather conditions and precipitation radar, proxied through Flask so the API key never reaches the browser.</li>
         </ul>
       </div>
@@ -814,7 +814,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
   <div class="wrap">
     <div class="contact-line"><a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a></div>
     <div class="contact-line"><a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a></div>
-    <div class="contact-line"><a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">linkedin.com/in/patrick-o-brien</a></div>
+    <div class="contact-line"><a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">LinkedIn</a></div>
     <div class="contact-line"><a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a></div>
     <div class="contact-line">Baltimore, MD</div>
     <p class="fine-print">© <span id="year"></span> Patrick O'Brien</p>
