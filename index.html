@@ -24,7 +24,9 @@
 <meta name="twitter:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
 <style>
   :root{
     --bg: #10141A;
@@ -96,6 +98,13 @@
     transition: color 0.15s ease;
   }
   header.site-nav nav a:hover{ color: var(--text); }
+  header.site-nav nav a.active{ color: var(--text); }
+  header.site-nav nav a.active:not(.nav-resume){
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-underline-offset: 6px;
+    text-decoration-thickness: 2px;
+  }
   header.site-nav nav a.nav-resume{
     color: var(--accent);
     border: 1px solid var(--accent-dim);
@@ -240,7 +249,7 @@
   /* ---------- Section shell ---------- */
   section{ padding: 72px 0; border-bottom: 1px solid var(--border); }
   section:last-of-type{ border-bottom: none; }
-  section h2{
+  section h2, footer h2{
     font-size: 24px;
     letter-spacing: -0.01em;
     color: var(--text);
@@ -250,7 +259,7 @@
     align-items: center;
     gap: 16px;
   }
-  section h2::before{
+  section h2::before, footer h2::before{
     content: "";
     width: 28px;
     height: 2px;
@@ -258,7 +267,7 @@
     border-radius: 1px;
     flex: none;
   }
-  section h2::after{
+  section h2::after, footer h2::after{
     content: "";
     flex: 1;
     height: 1px;
@@ -316,9 +325,9 @@
     padding: 24px;
     display: flex;
     flex-direction: column;
-    transition: border-color .2s ease;
+    transition: border-color .2s ease, transform .2s ease;
   }
-  .project-card:hover{ border-color: var(--accent-dim); }
+  .project-card:hover{ border-color: var(--accent-dim); transform: translateY(-2px); }
   /* Full-stack track: swap the accent to the cool colour inside these cards */
   .project-card.fs{
     --accent: var(--accent-2);
@@ -571,32 +580,53 @@
 
   /* ---------- Footer ---------- */
   footer{
-    padding: 48px 0 64px;
-    text-align: left;
+    padding: 56px 0 64px;
+    border-top: 1px solid var(--border);
   }
-  footer .contact-line{
+  footer h2{ margin-bottom: 20px; }
+  footer .contact-lead{
+    margin: 0 0 18px;
+    color: var(--text-dim);
     font-size: 15px;
-    margin-bottom: 6px;
+    max-width: 60ch;
   }
-  footer .contact-line a{
+  footer .contact-row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    font-size: 15px;
+    color: var(--text-dim);
+  }
+  footer .contact-row a{
     color: var(--accent);
     text-decoration: none;
+    border-bottom: 1px solid transparent;
   }
-  footer .contact-line a:hover{ text-decoration: underline; }
-  footer .fine-print{
-    margin-top: 24px;
+  footer .contact-row a:hover{ border-bottom-color: var(--accent); }
+  footer .foot-bar{
+    margin-top: 40px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 16px;
     font-size: 12.5px;
     color: var(--text-dim);
   }
+  footer .foot-bar a{ color: var(--text-dim); text-decoration: none; }
+  footer .foot-bar a:hover{ color: var(--text); }
+  footer .foot-bar .top{ font-family: 'IBM Plex Mono', monospace; }
 
   @media (prefers-reduced-motion: reduce){
     .terminal-line .caret{ animation: none; }
     .hero h1, .hero .role, .hero .summary, .hero-proof, .hero-meta{ animation: none; }
+    .project-card:hover{ transform: none; }
     html{ scroll-behavior: auto; }
   }
 </style>
 </head>
-<body>
+<body id="top">
 
 <header class="site-nav">
   <div class="wrap">
@@ -724,8 +754,8 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
 
       <div class="project-card featured fs is-featured">
         <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
-          <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
-          <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="1280" height="800">
+          <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="960" height="600">
+          <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="960" height="600">
         </a>
         <div class="body">
           <div class="featured-label">Featured</div>
@@ -811,17 +841,45 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
 
 <footer id="contact">
   <div class="wrap">
-    <div class="contact-line"><a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a></div>
-    <div class="contact-line"><a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a></div>
-    <div class="contact-line"><a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">LinkedIn</a></div>
-    <div class="contact-line"><a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a></div>
-    <div class="contact-line">Baltimore, MD</div>
-    <p class="fine-print">© <span id="year"></span> Patrick O'Brien</p>
+    <h2>Contact</h2>
+    <p class="contact-lead">Open to software engineering and identity &amp; access automation roles. Email is the fastest way to reach me.</p>
+    <div class="contact-row">
+      <a href="mailto:patobrien3590@gmail.com">patobrien3590@gmail.com</a>
+      <a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a>
+      <a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF)</a>
+      <span>Baltimore, MD</span>
+    </div>
+    <div class="foot-bar">
+      <span>&copy; <span id="year"></span> Patrick O'Brien &middot; Plain HTML and CSS, hosted on GitHub Pages &middot; <a href="https://github.com/pobrienDev/portfolio" target="_blank" rel="noopener">Source</a></span>
+      <a class="top" href="#top">&uarr; Back to top</a>
+    </div>
   </div>
 </footer>
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Nav scroll-spy: underline the section currently in view
+  (function(){
+    var links = document.querySelectorAll('header.site-nav nav a[href^="#"]');
+    var ids = [];
+    links.forEach(function(a){ var id = a.getAttribute('href').slice(1); if(document.getElementById(id)){ ids.push(id); } });
+    if(!('IntersectionObserver' in window) || !ids.length){ return; }
+    var current = null;
+    var last = ids[ids.length - 1];
+    function atBottom(){ return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2; }
+    function update(){
+      var id = atBottom() ? last : current;
+      links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#' + id); });
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting){ current = e.target.id; } });
+      update();
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    ids.forEach(function(id){ io.observe(document.getElementById(id)); });
+    window.addEventListener('scroll', update, { passive: true });
+  })();
 
   // Project track filter: shows only the chosen track; All shows everything
   (function(){
