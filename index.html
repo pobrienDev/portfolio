@@ -266,6 +266,41 @@
   }
 
   /* ---------- Projects ---------- */
+  .track-filter{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: -16px 0 28px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .track-filter .lbl{ color: var(--text-dim); margin-right: 4px; }
+  .track-filter button{
+    font: inherit;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .track-filter button:hover{ color: var(--text); border-color: var(--accent-dim); }
+  .track-filter button[aria-pressed="true"]{
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .track-filter button[data-track="fs"][aria-pressed="true"]{
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+  }
+  .track-filter button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Only the selected track is shown; "All" shows everything */
+  .project-grid[data-show="identity"] .project-card.fs,
+  .project-grid[data-show="fs"] .project-card:not(.fs){ display: none; }
+  .track-filter .count{ color: var(--text-dim); margin-left: 4px; }
   .project-grid{
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -603,7 +638,14 @@
 <section id="projects">
   <div class="wrap">
     <h2>Projects</h2>
-    <div class="project-grid">
+    <div class="track-filter" role="group" aria-label="Filter projects by track">
+      <span class="lbl">show</span>
+      <button type="button" data-track="all" aria-pressed="true">All</button>
+      <button type="button" data-track="identity" aria-pressed="false">Identity &amp; cloud</button>
+      <button type="button" data-track="fs" aria-pressed="false">Full-stack</button>
+      <span class="count" id="trackCount" aria-live="polite"></span>
+    </div>
+    <div class="project-grid" id="projectGrid" data-show="all">
       <div class="project-card wide is-featured">
         <div class="featured-label">Featured</div>
         <h3>Entra ID Infrastructure-as-Code</h3>
@@ -780,6 +822,27 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Project track filter: shows only the chosen track; All shows everything
+  (function(){
+    var grid = document.getElementById('projectGrid');
+    var btns = document.querySelectorAll('.track-filter button');
+    var count = document.getElementById('trackCount');
+    var cards = grid.querySelectorAll('.project-card');
+    function show(t){
+      grid.setAttribute('data-show', t);
+      btns.forEach(function(o){ o.setAttribute('aria-pressed', String(o.getAttribute('data-track') === t)); });
+      var visible = 0;
+      cards.forEach(function(c){ if(c.offsetParent !== null){ visible++; } });
+      count.textContent = visible + ' of ' + cards.length;
+    }
+    btns.forEach(function(b){
+      b.addEventListener('click', function(){ show(b.getAttribute('data-track')); });
+    });
+    // Always start on "All", including when the browser restores the page from back/forward cache
+    show('all');
+    window.addEventListener('pageshow', function(e){ if(e.persisted){ show('all'); } });
+  })();
 
   // One-time terminal typing intro, respects reduced-motion
   (function(){
