@@ -218,60 +218,6 @@
     margin: 0 0 36px;
   }
 
-  /* ---------- Experience timeline ---------- */
-  .timeline{
-    position: relative;
-    padding-left: 28px;
-  }
-  .timeline::before{
-    content: "";
-    position: absolute;
-    left: 4px;
-    top: 6px;
-    bottom: 6px;
-    width: 1px;
-    background: var(--border);
-  }
-  .timeline-item{
-    position: relative;
-    margin-bottom: 40px;
-  }
-  .timeline-item:last-child{ margin-bottom: 0; }
-  .timeline-item::before{
-    content: "";
-    position: absolute;
-    left: -28px;
-    top: 6px;
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-  .timeline-date{
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12.5px;
-    color: var(--accent);
-    margin-bottom: 6px;
-  }
-  .timeline-item h3{
-    font-size: 17px;
-    font-weight: 600;
-    margin: 0 0 2px;
-  }
-  .timeline-item .org{
-    font-size: 14px;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-  }
-  .timeline-item ul{
-    margin: 0;
-    padding-left: 18px;
-    color: var(--text-dim);
-    font-size: 14.5px;
-  }
-  .timeline-item li{ margin-bottom: 6px; }
-  .timeline-item li:last-child{ margin-bottom: 0; }
-
   /* ---------- Projects ---------- */
   .project-grid{
     display: grid;
@@ -497,32 +443,43 @@
   .project-card li{ margin-bottom: 6px; }
   .project-card li:last-child{ margin-bottom: 0; }
 
-  /* ---------- Skills ---------- */
-  .skills-grid{
+  /* ---------- About ---------- */
+  .about-grid{
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px 40px;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
   }
-  @media (max-width: 560px){
-    .skills-grid{ grid-template-columns: 1fr; }
+  @media (max-width: 640px){ .about-grid{ grid-template-columns: 1fr; gap: 28px; } }
+  .about-text p{
+    margin: 0 0 16px;
+    color: var(--text-dim);
+    font-size: 15px;
+    max-width: 60ch;
   }
-  .skill-group h3{
-    font-size: 13px;
+  .about-text p:last-child{ margin-bottom: 0; }
+  .about-text a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .about-text a:hover{ color: var(--accent); }
+  .about-facts h3{
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
     font-weight: 600;
-    color: var(--text);
     margin: 0 0 10px;
   }
-  .skill-group p{
-    margin: 0;
-    color: var(--text-dim);
+  .about-facts h3 + .roles{ margin-bottom: 22px; }
+  .roles{ list-style: none; margin: 0; padding: 0; }
+  .roles li{
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 12px;
     font-size: 14px;
+    color: var(--text);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
   }
-
-  /* ---------- Education ---------- */
-  .edu-item{ margin-bottom: 18px; }
-  .edu-item:last-child{ margin-bottom: 0; }
-  .edu-item h3{ font-size: 15px; font-weight: 600; margin: 0 0 2px; }
-  .edu-item p{ margin: 0; color: var(--text-dim); font-size: 14px; }
+  .roles li:last-child{ border-bottom: none; }
+  .roles .when{ font-size: 12px; color: var(--accent); padding-top: 2px; white-space: nowrap; }
 
   /* ---------- Footer ---------- */
   footer{
@@ -556,9 +513,8 @@
   <div class="wrap">
     <div class="name">Patrick O'Brien</div>
     <nav>
-      <a href="#experience">Experience</a>
       <a href="#projects">Projects</a>
-      <a href="#skills">Skills</a>
+      <a href="#about">About</a>
       <a href="#contact">Contact</a>
       <a class="nav-resume" href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
     </nav>
@@ -571,12 +527,8 @@
     <h1>Patrick O'Brien</h1>
     <p class="role">Software Engineer &middot; Identity &amp; Access Automation</p>
     <p class="summary">
-      I&rsquo;m a software engineer who automates the identity layer &mdash; and the infrastructure underneath it.
-      My title is IT Support Specialist. The work is engineering: Python tooling on the Microsoft Graph API
-      that automates onboarding and offboarding in a 400+-user, 100+-property Microsoft 365 tenant, and,
-      separately, that same identity layer codified as <a href="#projects">Terraform</a> in a personal
-      sandbox tenant. I also build and ship full-stack apps in React and FastAPI, both live, with CI/CD
-      behind them.
+      I build identity and access automation and full-stack web apps. Below is the work: live demos,
+      the code, and the bugs I found and fixed along the way.
     </p>
     <div class="hero-proof mono">
       <span>B.S. Computer Science</span>
@@ -590,41 +542,6 @@
       <a href="https://github.com/pobriendev" target="_blank" rel="noopener">github.com/pobriendev</a>
       <a href="https://www.linkedin.com/in/patrick-o-brien-658125257/" target="_blank" rel="noopener">LinkedIn</a>
       <a class="resume-link" href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume (PDF) &#8599;</a>
-    </div>
-  </div>
-</section>
-
-<section id="experience">
-  <div class="wrap">
-    <h2>Experience</h2>
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-date">Jun 2025 — Present</div>
-        <h3>IT Support Specialist</h3>
-        <div class="org">Habitat America · Annapolis, MD</div>
-        <ul>
-          <li>Built a Python tool on the Microsoft Graph API that automates the Graph side of onboarding and offboarding in a single command &mdash; account creation or role-account reuse, licensing, group membership, and lockout-first offboarding &mdash; and prints the remaining Exchange steps ready to paste. Runs against a 400+-user, 100+-property Microsoft 365 tenant.</li>
-          <li>Administer and maintain Microsoft 365, Microsoft Entra ID, and Exchange environments supporting 400+ users across 100+ managed properties.</li>
-          <li>Diagnose and resolve technical issues across systems and applications, applying structured, engineering-driven problem-solving under time constraints.</li>
-        </ul>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-date">Mar 2019 — May 2025</div>
-        <h3>Operations &amp; Database Manager</h3>
-        <div class="org">Mike's Mowing (family business) · Ridgely, MD</div>
-        <ul>
-          <li>Independently designed, built, and maintained a Microsoft Access database covering customer records, service history, and scheduling.</li>
-          <li>Owned data integrity across the system — validating inputs, resolving inconsistencies, and structuring tables, queries, and forms — over a 6-year period while working full-time alongside coursework.</li>
-        </ul>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-date">Mar 2013 — Mar 2019</div>
-        <h3>Job Coach</h3>
-        <div class="org">Benedictine · Ridgely, MD</div>
-        <ul>
-          <li>Provided on-the-job coaching and support for individuals with disabilities in workplace settings.</li>
-        </ul>
-      </div>
     </div>
   </div>
 </section>
@@ -772,40 +689,36 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
   </div>
 </section>
 
-<section id="skills">
+<section id="about">
   <div class="wrap">
-    <h2>Skills</h2>
-    <div class="skills-grid">
-      <div class="skill-group">
-        <h3>Identity &amp; Cloud</h3>
-        <p>Microsoft Entra ID (Azure AD), Microsoft Graph API, Microsoft 365, Exchange Online, Azure, Azure Key Vault, user lifecycle management, role-based access control, least-privilege access, OIDC workload identity federation</p>
+    <h2>About</h2>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>
+          I&rsquo;m a software engineer who automates the identity layer &mdash; and the infrastructure underneath it.
+          My title is IT Support Specialist. The work is engineering: Python tooling on the Microsoft Graph API
+          that automates onboarding and offboarding in a 400+-user, 100+-property Microsoft 365 tenant, and,
+          separately, that same identity layer codified as Terraform in a personal sandbox tenant.
+        </p>
+        <p>
+          Day to day that means Python, PowerShell, Terraform, and GitHub Actions on the identity side, and
+          React, FastAPI, and PostgreSQL on the application side, with tests and CI behind all of it. The full
+          history is in the <a href="assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">resume</a>.
+        </p>
       </div>
-      <div class="skill-group">
-        <h3>Automation &amp; Infrastructure</h3>
-        <p>Python, PowerShell, Terraform, infrastructure as code, Docker, GitHub Actions (CI/CD), Git/GitHub, REST APIs</p>
+      <div class="about-facts">
+        <h3>Roles</h3>
+        <ul class="roles">
+          <li><span class="when mono">2025 &mdash; now</span><span>IT Support Specialist, Habitat America</span></li>
+          <li><span class="when mono">2019 &mdash; 2025</span><span>Operations &amp; Database Manager, Mike&rsquo;s Mowing</span></li>
+          <li><span class="when mono">2013 &mdash; 2019</span><span>Job Coach, Benedictine</span></li>
+        </ul>
+        <h3>Education</h3>
+        <ul class="roles">
+          <li><span class="when mono">2025</span><span>B.S. Computer Science, Delaware State University</span></li>
+          <li><span class="when mono">2020</span><span>A.S. Computing &amp; Information Science, Delaware Technical Community College</span></li>
+        </ul>
       </div>
-      <div class="skill-group">
-        <h3>Languages &amp; Frameworks</h3>
-        <p>Python, TypeScript, JavaScript, SQL, Java, C/C++, React, FastAPI, Flask, SQLAlchemy / Alembic</p>
-      </div>
-      <div class="skill-group">
-        <h3>Data &amp; Testing</h3>
-        <p>PostgreSQL, MySQL, SQLite, pytest, Vitest, Playwright, JWT auth</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="education">
-  <div class="wrap">
-    <h2>Education</h2>
-    <div class="edu-item">
-      <h3>B.S. in Computer Science</h3>
-      <p>Delaware State University · 2025</p>
-    </div>
-    <div class="edu-item">
-      <h3>A.S. in Computing and Information Science</h3>
-      <p>Delaware Technical Community College · 2020</p>
     </div>
   </div>
 </section>
