@@ -127,6 +127,34 @@
   .hero{
     padding: 88px 0 72px;
     border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Faint dot grid behind the hero, fading out toward the right and bottom */
+  .hero::before{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(var(--border) 1px, transparent 1.5px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 90% at 28% 35%, #000 10%, transparent 75%);
+            mask-image: radial-gradient(ellipse 70% 90% at 28% 35%, #000 10%, transparent 75%);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+  .hero .wrap{ position: relative; }
+  /* Staged entrance: each hero row rises in after the prompt starts typing */
+  .hero h1, .hero .role, .hero .summary, .hero-proof, .hero-meta{
+    animation: rise .55s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .hero h1{ animation-delay: .25s; }
+  .hero .role{ animation-delay: .35s; }
+  .hero .summary{ animation-delay: .45s; }
+  .hero-proof{ animation-delay: .55s; }
+  .hero-meta{ animation-delay: .65s; }
+  @keyframes rise{
+    from{ opacity: 0; transform: translateY(10px); }
+    to{ opacity: 1; transform: none; }
   }
   .terminal-line{
     font-size: 14px;
@@ -284,6 +312,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px 16px;
+    margin-bottom: 12px;
     margin-bottom: 14px;
   }
   .project-card .card-links .repo-link{ margin-bottom: 0; }
@@ -336,6 +365,27 @@
     flex-direction: column;
   }
   .project-card.featured h3{ font-size: 20px; }
+  /* Featured cards: accent-tinted gradient border and a soft glow */
+  .project-card.is-featured{
+    border-color: transparent;
+    background:
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(135deg, var(--accent-dim) 0%, var(--border) 45%, var(--border) 100%) border-box;
+    box-shadow: 0 0 0 1px var(--accent-soft), 0 18px 40px -28px rgba(0,0,0,.9);
+  }
+  .project-card.is-featured:hover{
+    background:
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 40%, var(--border) 100%) border-box;
+  }
+  .project-card.is-featured h3{ font-size: 20px; }
+  .project-card .tagline{
+    margin: 0 0 12px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--text);
+    max-width: 60ch;
+  }
   .featured-label{
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -506,6 +556,7 @@
 
   @media (prefers-reduced-motion: reduce){
     .terminal-line .caret{ animation: none; }
+    .hero h1, .hero .role, .hero .summary, .hero-proof, .hero-meta{ animation: none; }
     html{ scroll-behavior: auto; }
   }
 </style>
@@ -553,10 +604,11 @@
   <div class="wrap">
     <h2>Projects</h2>
     <div class="project-grid">
-      <div class="project-card wide">
+      <div class="project-card wide is-featured">
         <div class="featured-label">Featured</div>
         <h3>Entra ID Infrastructure-as-Code</h3>
         <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
+        <p class="tagline">The identity layer my Graph tools need, codified in a sandbox tenant, with CI that can plan but cannot write to Azure.</p>
         <div class="stack-tags">
           <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span>
         </div>
@@ -628,18 +680,20 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         </figure>
       </div>
 
-      <div class="project-card featured fs">
+      <div class="project-card featured fs is-featured">
         <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
           <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
           <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="1280" height="800">
         </a>
         <div class="body">
+          <div class="featured-label">Featured</div>
           <h3>DartMetrics</h3>
           <div class="card-links">
             <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
             <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
             <span class="demo-note">Free-tier host: first load can take a minute or two while the host wakes.</span>
           </div>
+          <p class="tagline">Live and shipped: a framework-free scoring engine, with every stat derived from the raw darts.</p>
           <div class="stack-tags">
             <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>TypeScript</span><span>JWT + Argon2</span><span>Docker</span>
           </div>
