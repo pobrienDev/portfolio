@@ -36,6 +36,9 @@
     --accent: #E8A33D;
     --accent-dim: #B97F2C;
     --accent-soft: rgba(232,163,61,0.12);
+    --accent-2: #5CC4CF;          /* cool accent for the full-stack track */
+    --accent-2-dim: #3E939C;
+    --accent-2-soft: rgba(92,196,207,0.12);
     --max-w: 880px;
   }
 
@@ -207,37 +210,61 @@
   .hero-meta a.resume-link{ color: var(--accent); font-weight: 500; }
 
   /* ---------- Section shell ---------- */
-  section{ padding: 64px 0; border-bottom: 1px solid var(--border); }
+  section{ padding: 72px 0; border-bottom: 1px solid var(--border); }
   section:last-of-type{ border-bottom: none; }
   section h2{
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
+    font-size: 24px;
+    letter-spacing: -0.01em;
+    color: var(--text);
     font-weight: 600;
-    margin: 0 0 36px;
+    margin: 0 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  section h2::before{
+    content: "";
+    width: 28px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    flex: none;
+  }
+  section h2::after{
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 
   /* ---------- Projects ---------- */
   .project-grid{
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 28px;
   }
   @media (max-width: 640px){
-    .project-grid{ grid-template-columns: 1fr; }
+    .project-grid{ grid-template-columns: 1fr; gap: 20px; }
   }
   .project-card{
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 22px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
+    transition: border-color .2s ease;
+  }
+  .project-card:hover{ border-color: var(--accent-dim); }
+  /* Full-stack track: swap the accent to the cool colour inside these cards */
+  .project-card.fs{
+    --accent: var(--accent-2);
+    --accent-dim: var(--accent-2-dim);
+    --accent-soft: var(--accent-2-soft);
   }
   .project-card .shot{
     display: block;
-    margin: -22px -22px 18px;
+    margin: -24px -24px 20px;
     border-bottom: 1px solid var(--border);
     border-radius: 6px 6px 0 0;
     overflow: hidden;
@@ -308,7 +335,7 @@
     display: flex;
     flex-direction: column;
   }
-  .project-card.featured h3{ font-size: 19px; }
+  .project-card.featured h3{ font-size: 20px; }
   .featured-label{
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -332,7 +359,7 @@
   /* Full-width text cards (CLI tools, infrastructure) */
   .project-card{ min-width: 0; }  /* let wide <pre> blocks scroll instead of stretching the grid */
   .project-card.wide{ grid-column: 1 / -1; }
-  .project-card.wide ul{ max-width: 78ch; flex-grow: 0; }
+  .project-card.wide ul{ max-width: 72ch; flex-grow: 0; }
 
   /* "Recent fix" note on a project card */
   .fix-note{
@@ -404,9 +431,11 @@
     .terminal .t-note{ display: none; }
   }
   .project-card h3{
-    font-size: 16px;
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 17px;
     font-weight: 600;
-    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
   }
   .project-card .repo-link{
     font-family: 'IBM Plex Mono', monospace;
@@ -438,9 +467,10 @@
     padding-left: 16px;
     color: var(--text-dim);
     font-size: 13.5px;
+    line-height: 1.6;
     flex-grow: 1;
   }
-  .project-card li{ margin-bottom: 6px; }
+  .project-card li{ margin-bottom: 8px; }
   .project-card li:last-child{ margin-bottom: 0; }
 
   /* ---------- About ---------- */
@@ -598,7 +628,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         </figure>
       </div>
 
-      <div class="project-card featured">
+      <div class="project-card featured fs">
         <a class="shot" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">
           <img src="assets/dartmetrics.jpg" alt="DartMetrics live 501 scoring screen with dart entry keypad" loading="lazy" width="1280" height="800">
           <img src="assets/dartmetrics-summary.jpg" alt="DartMetrics match summary comparing darts thrown, three-dart average, high visit, and checkout percentage for both players" loading="lazy" width="1280" height="800">
@@ -622,7 +652,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         </div>
       </div>
 
-      <div class="project-card">
+      <div class="project-card fs">
         <a class="shot gif" href="https://ticket-system-azure-omega.vercel.app" target="_blank" rel="noopener">
           <img src="assets/ticket-system.gif" alt="Animated demo of the Ticket Management System: signing in, filtering the queue, working a ticket, and reviewing its audit history" loading="lazy" width="880" height="620">
         </a>
@@ -643,7 +673,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         <p class="fix-note"><span class="fix-label">Recent fix</span>SLA due dates ignored priority changes, so an escalated ticket kept its old deadline. Fixed test-first: three new tests failed before the change. <a href="https://github.com/pobrienDev/ticket-system/pull/8" target="_blank" rel="noopener">See the PR &#8599;</a></p>
       </div>
 
-      <div class="project-card">
+      <div class="project-card fs">
         <a class="shot gif" href="https://github.com/pobriendev/ski-resort-explorer" target="_blank" rel="noopener">
           <img src="assets/ski-resort-explorer.gif" alt="Animated demo of Ski Resort Explorer: searching resorts, browsing the map, and opening a resort detail page with live weather" loading="lazy" width="800" height="500">
         </a>
