@@ -521,6 +521,7 @@
   .terminal .t-c{ color: var(--text); }
   .terminal .t-o{ color: var(--text); }
   .terminal .t-hl{ color: var(--accent); }
+  .terminal .t-err{ color: #E8846B; }
   @media (max-width: 560px){
     .terminal .t-note{ display: none; }
   }
@@ -706,6 +707,37 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
       </div>
 
       <div class="project-card wide">
+        <h3>Conditional Access as Code</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-conditional-access" target="_blank" rel="noopener">github.com/pobriendev/entra-conditional-access</a>
+        <div class="stack-tags">
+          <span>Terraform</span><span>Microsoft Entra ID</span><span>Python</span><span>GitHub Actions (OIDC)</span><span>Policy as code</span>
+        </div>
+        <ul>
+          <li>Seven Conditional Access policies as reviewed, version-controlled Terraform in a personal sandbox tenant, all deployed in report-only, to be enforced one at a time after validation against sign-in logs: MFA for all users, phishing-resistant auth for admins, legacy auth blocked, MFA for Azure management, sign-in and user risk, and protected security-info registration. Every policy excludes the break-glass group.</li>
+          <li>Every change is a pull request with a redacted plan and a Python guardrail check that fails closed: no policy without the break-glass exclusion, new policies start report-only, no all-users-all-apps block, no deletes without an explicit flag. 40+ guardrail tests.</li>
+          <li>Apply waits for a required reviewer, and the write identity&rsquo;s federated credential trusts only that approval gate, so a job that skips it cannot get a token. A daily drift job opens one issue when someone edits a policy in the portal and closes it when the code matches again.</li>
+        </ul>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>plan on PR &mdash; guardrail verdict<span class="t-note">real CI output from a deliberate failure test; IDs redacted</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform show -json tfplan &gt; plan.json &amp;&amp; python3 guardrails/check_plan.py plan.json</span>
+<span class="t-err">::error::CA004-AllUsers-AzureMgmt-RequireMFA: must exclude the break-glass group</span>
+<span class="t-err">guardrails: 1 problem(s) found</span>
+
+  # azuread_conditional_access_policy.ca004 will be updated in-place
+  ~ resource "azuread_conditional_access_policy" "ca004" {
+      ~ users {
+          ~ excluded_groups = [
+              <span class="t-hl">- "&lt;guid&gt;",</span>
+            ]
+        }
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+<span class="t-o">Guardrails: FAILED &mdash; the pull request cannot merge.</span></pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
         <h3>Employee Provisioning Tool</h3>
         <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
         <div class="stack-tags">
@@ -727,6 +759,19 @@ Terminating:
   <span class="t-hl">[dry-run]</span> would remove 1 license(s)
   manual step if mail must be retained: convert the mailbox to shared (Exchange admin center)</pre>
         </figure>
+      </div>
+
+      <div class="project-card wide">
+        <h3>Entra Credential Monitor</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-credential-monitor" target="_blank" rel="noopener">github.com/pobriendev/entra-credential-monitor</a>
+        <div class="stack-tags">
+          <span>Python</span><span>Microsoft Graph API</span><span>GitHub Actions (OIDC)</span><span>Azure Functions</span>
+        </div>
+        <ul>
+          <li>Read-only monitor that finds expiring app secrets, certificates, and SAML signing certificates before they break sign-in, on read-only Graph permissions, and names each credential&rsquo;s owners so an alert reaches a person.</li>
+          <li>Runs daily in GitHub Actions with no stored secrets: OIDC federation gets the Graph token, so the monitor never creates the problem it detects. 90+ tests with Graph and GitHub mocked.</li>
+          <li>One issue per credential for its whole life, updated only when severity changes and closed with a comment when it&rsquo;s rotated. A replaced secret is labelled cleanup instead of alerted, and apps with no owners are reported as their own finding. An Azure Functions variant is also in the repo: the same scan on a managed identity, writing to keyless storage.</li>
+        </ul>
       </div>
 
       <div class="project-card wide">
