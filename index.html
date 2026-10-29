@@ -718,8 +718,9 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
           <li>Apply waits for a required reviewer, and the write identity&rsquo;s federated credential trusts only that approval gate, so a job that skips it cannot get a token. A daily drift job opens one issue when someone edits a policy in the portal and closes it when the code matches again.</li>
         </ul>
         <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>plan on PR &mdash; guardrail verdict<span class="t-note">real CI output from a deliberate failure test; IDs redacted</span></figcaption>
-          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform show -json tfplan &gt; plan.json &amp;&amp; python3 guardrails/check_plan.py plan.json</span>
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>plan on PR &mdash; guardrail verdict<span class="t-note">CI output from a failure test; IDs redacted, diff condensed</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform show -json tfplan &gt; plan.json</span>
+<span class="t-p">$</span> <span class="t-c">BREAKGLASS_GROUP_ID=&lt;group-id&gt; python3 ../guardrails/check_plan.py plan.json</span>
 <span class="t-err">::error::CA004-AllUsers-AzureMgmt-RequireMFA: must exclude the break-glass group</span>
 <span class="t-err">guardrails: 1 problem(s) found</span>
 
