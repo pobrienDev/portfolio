@@ -681,36 +681,9 @@
     <div class="project-grid" id="projectGrid" data-show="all">
       <div class="project-card wide is-featured">
         <div class="featured-label">Featured</div>
-        <h3>Entra ID Infrastructure-as-Code</h3>
-        <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
-        <p class="tagline">The identity layer my Graph tools need, codified in a sandbox tenant, with CI that can plan but cannot write to Azure.</p>
-        <div class="stack-tags">
-          <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span>
-        </div>
-        <ul>
-          <li>Terraform that codifies, in a personal sandbox tenant, the identity layer my Graph tools need &mdash; app registration with scoped Graph application permissions and admin consent as code, a 180-day client secret in Key Vault replaced on the next apply, and remote state in Azure Storage with Entra-only auth, shared-key access disabled, versioning and soft delete, and the bootstrap step documented.</li>
-          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a CI identity that holds no Azure write roles, and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
-          <li>The permissions that reset passwords and remove MFA methods sit behind a flag, off by default &mdash; a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</li>
-        </ul>
-        <p class="fix-note"><span class="fix-label">Recent fix</span>CI&rsquo;s plan disagreed with mine on identical code and state: the config set each resource&rsquo;s owner to whoever ran Terraform, so CI proposed making itself the owner of everything. The owner is now an explicit input. <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">See the PR &#8599;</a></p>
-        <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">captured after the first apply (7 resources); the config has grown since</span></figcaption>
-          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
-azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
-
-<span class="t-hl">  # azurerm_resource_group.main will be created</span>
-<span class="t-o">  + resource "azurerm_resource_group" "main" {
-      + location = "westus2"
-      + name     = "rg-entra-iac"
-    }</span>
-
-<span class="t-o">Plan: 1 to add, 0 to change, 0 to destroy.</span></pre>
-        </figure>
-      </div>
-
-      <div class="project-card wide">
         <h3>Conditional Access as Code</h3>
         <a class="repo-link" href="https://github.com/pobriendev/entra-conditional-access" target="_blank" rel="noopener">github.com/pobriendev/entra-conditional-access</a>
+        <p class="tagline">Entra Conditional Access as reviewed Terraform: plan on every PR, fail-closed guardrails, approval-gated apply, daily drift detection. Deployed in report-only, to be enforced one policy at a time after validation.</p>
         <div class="stack-tags">
           <span>Terraform</span><span>Microsoft Entra ID</span><span>Python</span><span>GitHub Actions (OIDC)</span><span>Policy as code</span>
         </div>
@@ -737,6 +710,34 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
 
 Plan: 0 to add, 1 to change, 0 to destroy.
 <span class="t-o">Guardrails: FAILED &mdash; the pull request cannot merge.</span></pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide">
+        <h3>Entra ID Infrastructure-as-Code</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/entra-terraform" target="_blank" rel="noopener">github.com/pobriendev/entra-terraform</a>
+        <p class="tagline">The foundation under it: the app registrations, pipeline identities, and remote state the Conditional Access repo authenticates through, with CI that can plan but cannot write to Azure.</p>
+        <div class="stack-tags">
+          <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span>
+        </div>
+        <ul>
+          <li>Terraform that codifies, in a personal sandbox tenant, the identity layer my Graph tools need &mdash; app registration with scoped Graph application permissions and admin consent as code, a 180-day client secret in Key Vault replaced on the next apply, and remote state in Azure Storage with Entra-only auth, shared-key access disabled, versioning and soft delete, and the bootstrap step documented.</li>
+          <li>CI runs <span class="mono">terraform plan</span> on every PR through OIDC federation with a CI identity that holds no Azure write roles, and no stored credentials; plan output is redacted so the public repo and its logs expose no tenant identifiers.</li>
+          <li>The permissions that reset passwords and remove MFA methods sit behind a flag, off by default &mdash; a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</li>
+        </ul>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>CI&rsquo;s plan disagreed with mine on identical code and state: the config set each resource&rsquo;s owner to whoever ran Terraform, so CI proposed making itself the owner of everything. The owner is now an explicit input. <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">See the PR &#8599;</a></p>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">captured after the first apply (7 resources); the config has grown since</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
+azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
+
+<span class="t-hl">  # azurerm_resource_group.main will be created</span>
+<span class="t-o">  + resource "azurerm_resource_group" "main" {
+      + location = "westus2"
+      + name     = "rg-entra-iac"
+    }</span>
+
+<span class="t-o">Plan: 1 to add, 0 to change, 0 to destroy.</span></pre>
         </figure>
       </div>
 
