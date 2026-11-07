@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: entra-stale-accounts — Patrick O'Brien</title>
+<meta name="description" content="A read-only CLI on PyPI that flags inactive Microsoft Entra ID accounts: how a pattern from production automation became a package any admin can install, and the three bugs that only a real tenant could find.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/entra-stale-accounts.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/entra-stale-accounts.html">
+<meta property="og:title" content="Case study: entra-stale-accounts">
+<meta property="og:description" content="A read-only CLI on PyPI that flags inactive Entra ID accounts, and the three bugs that only a real tenant could find.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Open source</p>
+  <h1>A stale-account check that any Entra admin can <span class="mono">pip install</span></h1>
+  <p class="lede">While automating provisioning I kept needing the same question answered: which accounts have not signed in for ninety days, and which of those never signed in at all? The answer became a small, read-only command-line tool, published on PyPI, that works against any tenant and never changes anything.</p>
+  <div class="stack-tags">
+    <span>Python</span><span>Microsoft Graph API</span><span>Microsoft Entra ID</span><span>PyPI</span><span>pytest</span><span>GitHub Actions</span>
+  </div>
+  <ul class="facts">
+    <li><b>600</b><span>lines of source, split so the logic needs no mocks</span></li>
+    <li><b>63</b><span>offline tests on five Python versions</span></li>
+    <li><b>7</b><span>releases, each one a changelog entry</span></li>
+    <li><b>GET</b><span>the only kind of Graph call it makes</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>Accounts that nobody uses are a quiet risk: they keep a working login and often a paid license, and nobody is watching them. The Entra admin center can show last sign-in per user, but not as a list filtered by threshold, exported for a manager, or run on a schedule. Every time I needed that list I was writing the same loop over the Graph user collection by hand.</p>
+  <p>The tool does one thing. <code>entra-stale-accounts check --days 90</code> prints a table of enabled accounts with no sign-in in ninety days, with accounts that have never signed in always included and sorted to the top, since no activity at all is at least as noteworthy as an old sign-in. <code>--output csv</code> turns it into a file to hand to someone; <code>--licenses</code> adds a column of each account's license SKUs, which turns a stale list into a reclaim list.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>Read-only by construction, and the security policy says so.</b> The only Graph calls are reads of the user list and, with <code>--licenses</code>, the tenant's SKU list, plus the token request. Nothing is ever created, modified or deleted, and the repository's <code>SECURITY.md</code> states that as a commitment with a private reporting channel, not as a feature. An admin evaluating a tool that wants <code>AuditLog.Read.All</code> on their tenant deserves to be told exactly what it will and will not do.</p></div>
+
+  <div class="decision"><p><b>The logic is pure, so the tests need no mocks.</b> Everything that parses timestamps, applies the threshold and formats output lives in one module that never touches the network or configuration. Those functions are tested directly with plain values. The Graph client is the only part that needs a fake, and the whole suite runs in milliseconds with no credentials and no tenant.</p></div>
+
+  <div class="decision"><p><b>Say where the licensing wall is.</b> The <code>signInActivity</code> field the tool depends on requires an Entra ID P1 or P2 license on the tenant, not just API permissions. Without it the field comes back empty and every account looks like it never signed in. The README calls this out before setup and the troubleshooting section repeats it: if <em>every</em> account shows <code>never</code>, suspect the license, not your users.</p></div>
+
+  <div class="decision"><p><b>Names are user-controlled input, even in a CSV.</b> A display name can start with <code>=</code> or <code>+</code>, and Excel will execute it as a formula when the report is opened. Exported values that start with a formula character are prefixed so they render as text. A report about a tenant's users should never trust those users to have harmless names.</p></div>
+
+  <div class="decision"><p><b>Publishing has no secret either.</b> Pushing a version tag runs the tests, builds the package, and publishes to PyPI through trusted publishing: GitHub's OIDC token is exchanged for a short-lived PyPI credential inside a dedicated environment. There is no API token to store or rotate, the same pattern I later used for Azure in the <a href="entra-terraform.html">Terraform case study</a>.</p></div>
+
+  <h2>What a run looks like</h2>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>entra-stale-accounts<span class="t-note">sample run, placeholder data</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pip install entra-stale-accounts</span>
+<span class="t-p">$</span> <span class="t-c">entra-stale-accounts check --days 90</span>
+USER PRINCIPAL NAME            DISPLAY NAME  ENABLED  LAST SIGN-IN  DAYS
+-----------------------------  ------------  -------  ------------  -----
+nina@contoso.onmicrosoft.com   Never Nina    true     never         never
+sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
+
+<span class="t-o">2 stale account(s) past a 90-day threshold.</span></pre>
+  </figure>
+
+  <h2>Three bugs only a real tenant could find</h2>
+  <p>The first release passed every test and failed against the first real tenant it met. The test suite was faithful to how I <em>thought</em> Graph behaved; the next three patch releases were corrections to that model, and each one is a changelog entry.</p>
+  <ol>
+    <li><b>Graph caps the page size at 120 when <code>signInActivity</code> is selected.</b> The tool asked for pages of 999, which is the documented maximum for the user collection, and got a 400 instead. The cap is a property of that one field, and the only way to learn it is to request it.</li>
+    <li><b>Graph emits seven fractional digits in timestamps.</b> Python's ISO parser before 3.11 accepts exactly three or six, so on 3.9 and 3.10 affected accounts raised a parse error that was caught and reported as never signed in. That is the worst kind of bug for an audit tool: wrong, confident and plausible. Fractional seconds are now normalised before parsing, and CI runs the suite on every version from 3.9 to 3.13.</li>
+    <li><b>A <code>.env</code> in the current directory was ignored after <code>pip install</code>.</b> The dotenv library's default discovery searches from the package's install location, not from where the command is run. It worked from a source checkout, where those are the same place, and silently found nothing once installed. Found only by running the published package rather than the repository.</li>
+  </ol>
+  <p>The lesson I took from these is to treat the published artifact as a different thing from the source tree, and to run it, installed, against a real tenant before calling a release done. That is now the last step before every tag.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>Installable with one command on any tenant; works with an app registration holding two read permissions, and degrades gracefully without the optional third.</li>
+    <li>Seven releases from 0.1.0 to 0.2.1 in ten days, each with a changelog entry, a git tag and a GitHub release, published automatically with no stored credential.</li>
+    <li>Tests run on five Python versions on every push, and the suite has never needed a credential or a network connection.</li>
+    <li>It became the proving ground for patterns I reused elsewhere: pure logic modules, honouring <code>Retry-After</code> on throttling, OIDC publishing, and treating user-controlled strings as hostile wherever they end up.</li>
+  </ul>
+
+  <h2>What I would do differently next</h2>
+  <ul>
+    <li>A <code>--since</code> option that reads the last report and shows only what changed, so a scheduled run produces a diff rather than a full list.</li>
+    <li>Signed release artifacts, so the Windows launcher is not blocked by application control policies and the workaround in the troubleshooting section is unnecessary.</li>
+    <li>A certificate credential option for the app registration, for admins who do not want a client secret anywhere on the machine that runs the report.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/entra-stale-accounts" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://pypi.org/project/entra-stale-accounts/" target="_blank" rel="noopener">PyPI &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-stale-accounts/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-stale-accounts/blob/main/SECURITY.md" target="_blank" rel="noopener">Security policy &#8599;</a>
+    <a href="employee-provisioning-tool.html">Where it came from &rarr;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
