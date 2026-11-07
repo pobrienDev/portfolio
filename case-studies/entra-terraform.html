@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: Entra ID infrastructure as code — Patrick O'Brien</title>
+<meta name="description" content="How I moved a Microsoft Entra ID identity layer from portal clicks to Terraform: least-privilege Graph permissions, Key Vault, locked-down remote state, and GitHub Actions planning through OIDC with no stored secrets.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/entra-terraform.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/entra-terraform.html">
+<meta property="og:title" content="Case study: Entra ID infrastructure as code">
+<meta property="og:description" content="Portal clicks to Terraform: least-privilege Graph permissions, Key Vault, locked-down remote state, and CI that plans through OIDC with no stored secrets.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg: #10141A;
+    --surface: #171D26;
+    --surface-2: #1E2530;
+    --border: #2A323F;
+    --text: #E7EBEF;
+    --text-dim: #94A1B2;
+    --accent: #E8A33D;
+    --accent-dim: #B97F2C;
+    --accent-soft: rgba(232,163,61,0.12);
+    --max-w: 760px;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono{ font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+  a{ color: inherit; }
+  .wrap{ max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav (same as the home page) ---------- */
+  header.site-nav{
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(16,20,26,0.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.site-nav .wrap{ display: flex; align-items: center; justify-content: space-between; padding-top: 16px; padding-bottom: 16px; }
+  header.site-nav .name{ font-weight: 600; font-size: 15px; letter-spacing: 0.01em; text-decoration: none; }
+  header.site-nav nav{ display: flex; gap: 24px; }
+  header.site-nav nav a{ text-decoration: none; color: var(--text-dim); font-size: 14px; transition: color 0.15s ease; }
+  header.site-nav nav a:hover{ color: var(--text); }
+  header.site-nav nav a.nav-resume{ color: var(--accent); border: 1px solid var(--accent-dim); border-radius: 4px; padding: 2px 10px; margin: -3px 0; }
+  header.site-nav nav a.nav-resume:hover{ background: var(--accent); color: var(--bg); }
+  @media (max-width: 560px){
+    header.site-nav .wrap{ padding-left: 16px; padding-right: 16px; }
+    header.site-nav nav{ gap: 12px; }
+    header.site-nav nav a{ font-size: 13px; }
+  }
+  @media (max-width: 440px){
+    header.site-nav .wrap{ flex-direction: column; align-items: flex-start; gap: 8px; padding-top: 12px; padding-bottom: 12px; }
+    header.site-nav nav{ flex-wrap: wrap; row-gap: 8px; gap: 16px; }
+  }
+
+  /* ---------- Article ---------- */
+  .eyebrow{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px; color: var(--accent);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin: 64px 0 14px;
+  }
+  h1{ font-size: clamp(28px, 4.5vw, 38px); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; margin: 0 0 14px; }
+  .lede{ font-size: 18px; color: var(--text-dim); margin: 0 0 24px; max-width: 640px; }
+  .stack-tags{ display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 28px; }
+  .stack-tags span{
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim);
+    background: var(--surface-2); border: 1px solid var(--border); padding: 3px 8px; border-radius: 4px;
+  }
+  .facts{
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;
+    margin: 0 0 56px; padding: 0; list-style: none;
+  }
+  .facts li{ background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; }
+  .facts b{ display: block; font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .facts span{ font-size: 12.5px; color: var(--text-dim); }
+
+  article h2{ font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin: 56px 0 16px; padding-top: 28px; border-top: 1px solid var(--border); }
+  article h3{ font-size: 16px; font-weight: 600; margin: 28px 0 8px; }
+  article p{ margin: 0 0 16px; }
+  article p, article li{ color: var(--text); }
+  article .dim{ color: var(--text-dim); }
+  article ul, article ol{ padding-left: 22px; margin: 0 0 16px; }
+  article li{ margin-bottom: 8px; }
+  article li::marker{ color: var(--accent); }
+  article code{ font-family: 'IBM Plex Mono', monospace; font-size: 0.92em; background: var(--surface-2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+  article a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  article a:hover{ color: var(--accent); }
+
+  .decision{
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 6px; padding: 16px 18px; margin: 0 0 14px;
+  }
+  .decision p{ margin: 0; }
+  .decision b{ display: block; margin-bottom: 4px; }
+
+  table{ width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 20px; }
+  th, td{ text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th{ font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); font-weight: 600; }
+  td:first-child{ font-family: 'IBM Plex Mono', monospace; font-size: 13px; white-space: nowrap; }
+
+  /* ---------- Terminal (same as the home page) ---------- */
+  .terminal{ min-width: 0; max-width: 100%; margin: 18px 0 24px; background: #0B0E13; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .terminal figcaption{ display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--text-dim); }
+  .terminal .dots{ display: inline-flex; gap: 6px; margin-right: 4px; }
+  .terminal .dots i{ width: 9px; height: 9px; border-radius: 50%; background: var(--border); }
+  .terminal .t-note{ margin-left: auto; opacity: 0.7; }
+  .terminal pre{ margin: 0; padding: 14px 16px; overflow-x: auto; font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; line-height: 1.6; color: var(--text-dim); white-space: pre; tab-size: 4; }
+  .terminal pre:focus-visible{ outline: 1px solid var(--accent-dim); outline-offset: -1px; }
+  .terminal .t-p{ color: var(--accent); }
+  .terminal .t-c{ color: var(--text); }
+  .terminal .t-o{ color: var(--text); }
+  .terminal .t-hl{ color: var(--accent); }
+  .terminal .t-err{ color: #E8846B; }
+  @media (max-width: 560px){ .terminal .t-note{ display: none; } }
+
+  .links{ display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+  .links a{
+    font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text); text-decoration: none;
+    background: var(--accent-soft); border: 1px solid var(--accent-dim); padding: 4px 10px; border-radius: 4px;
+  }
+  .links a:hover{ background: var(--accent); color: var(--bg); }
+
+  footer{ margin-top: 72px; padding: 32px 0 48px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-dim); }
+  footer a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Infrastructure as code</p>
+  <h1>Moving an Entra ID identity layer from portal clicks to Terraform</h1>
+  <p class="lede">Two of my Graph API automation tools started with the same hand-built setup: register an app, add permissions, grant consent, create a secret, paste it into a <span class="mono">.env</span>. I replaced that with versioned, reviewable code, then let it grow into the identity foundation for two more repos.</p>
+  <div class="stack-tags">
+    <span>Terraform</span><span>Azure</span><span>Microsoft Entra ID</span><span>Azure Key Vault</span><span>GitHub Actions (OIDC)</span><span>Microsoft Graph</span>
+  </div>
+  <ul class="facts">
+    <li><b>47</b><span>resources managed across two root modules</span></li>
+    <li><b>4</b><span>pipeline identities, zero stored secrets</span></li>
+    <li><b>0</b><span>tenant identifiers in a public repo and its CI logs</span></li>
+    <li><b>~9 hrs</b><span>five planned sessions, then one refactor</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>My <a href="https://github.com/pobrienDev/employee-provisioning-tool" target="_blank" rel="noopener">provisioning</a> and <a href="https://github.com/pobrienDev/entra-stale-accounts" target="_blank" rel="noopener">stale-accounts</a> CLIs both authenticate to Microsoft Graph as an app registration. Creating that registration was a checklist of portal clicks that nobody could review, diff or reproduce, and the resulting client secret lived in a local file. It was also the one layer of my portfolio with no infrastructure-as-code in it, and that shows up in nearly every cloud and identity job posting.</p>
+  <p>The goal was narrow on purpose: provision exactly the identity infrastructure those tools depend on, as Terraform, applied against a real tenant, with the one concept interviewers probe on most (state versus reality) demonstrated rather than described.</p>
+
+  <h2>Constraints</h2>
+  <ul>
+    <li><b>A personal tenant only.</b> Everything runs in my own Entra ID tenant and an Azure free-tier subscription, never an employer's.</li>
+    <li><b>Public from the start.</b> The repo is a portfolio piece, so it has to be public, which means no tenant, subscription, client or object IDs, no tenant domain, and no resource names that encode any of those, anywhere in the history or in CI logs.</li>
+    <li><b>Five resources, no more.</b> The plan fixed scope at a resource group, an app registration with permissions, a service principal with consent, a Key Vault for the secret, and remote state. If a sixth looked tempting, that was the signal to write the README instead.</li>
+  </ul>
+
+  <h2>What was built</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>What</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td>entra.tf</td><td>App registration, service principal, and one admin-consent grant per Graph permission</td><td>Declaring a permission is not granting it. The grant is a separate resource, so consent is code, not a portal button.</td></tr>
+      <tr><td>keyvault.tf</td><td>RBAC-mode Key Vault holding a client secret that Terraform generates and rotates every 180 days</td><td>The tools fetch the secret at runtime. Nothing sensitive lives in a config file.</td></tr>
+      <tr><td>bootstrap/</td><td>A second root module that creates a hardened storage account for state</td><td>Terraform cannot create the backend it needs to start. Something has to exist first, and this documents what and why.</td></tr>
+      <tr><td>github.tf</td><td>One table of GitHub Actions identities, each trusted through OIDC federation</td><td>CI plans every pull request with no Azure secret stored anywhere, and can plan but never apply.</td></tr>
+      <tr><td>.githooks/</td><td>A dependency-free pre-commit hook</td><td>Blocks state files, variable files, GUIDs, secret-shaped strings and tenant domains before they can reach a public history.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>Permissions came from the code that uses them, not from a guess.</b> I read both tools' Graph calls and granted the four application permissions they need. The two that let an app reset passwords and remove MFA methods are behind a flag that defaults to off: a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</p></div>
+
+  <div class="decision"><p><b>Key Vault keeps the secret out of code, not out of state.</b> Terraform generates the secret, so the value is recorded in state in plaintext. That is unavoidable with this approach, and I say so in the README rather than claiming otherwise. It is also the real justification for the next decision.</p></div>
+
+  <div class="decision"><p><b>State storage is locked down like the credential store it is.</b> Account keys disabled so access is Entra ID only, no anonymous blob access, TLS 1.2 minimum, a data-plane role scoped to one container, blob versioning and soft delete for recovery, and its own resource group so <code>terraform destroy</code> on the workload can never delete the state it is using.</p></div>
+
+  <div class="decision"><p><b>Nothing identifying is committed.</b> Tenant and subscription IDs come from a gitignored variables file; the state storage account name is passed at <code>init</code> time from a gitignored partial backend config. Graph permission IDs are looked up by name at plan time, so the config reads <code>"User.ReadWrite.All"</code> instead of an opaque GUID, and no GUID ever needs to be committed.</p></div>
+
+  <div class="decision"><p><b>The owner is an explicit input.</b> Early on, each resource's owner was "whoever is running Terraform". That is me on my laptop and the CI identity in Actions, which meant the same code and the same state produced different plans depending on who ran it. Infrastructure code should not mean different things to different callers. This one I would not have found without a second identity running the same configuration.</p></div>
+
+  <h2>State versus reality</h2>
+  <p>After the first apply I deleted the resource group by hand in the portal and ran a plan with no code changes. Terraform has no memory of what it <em>did</em>; every plan is a three-way comparison between what the code declares, what state believes exists, and what Azure actually reports. The refresh caught the gap and the plan proposed closing it, touching only the one resource that drifted.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">IDs redacted</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
+azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
+
+<span class="t-hl">  # azurerm_resource_group.main will be created</span>
+<span class="t-o">  + resource "azurerm_resource_group" "main" {
+      + location = "westus2"
+      + name     = "rg-entra-iac"
+    }</span>
+
+<span class="t-o">Plan: 1 to add, 0 to change, 0 to destroy.</span></pre>
+  </figure>
+
+  <h2>CI with no stored secret, and the three fixes it took</h2>
+  <p>The workflow authenticates with OIDC workload identity federation. GitHub mints a short-lived token for each run, and a federated credential on a dedicated CI app registration tells Entra ID to trust tokens from this repository. The CI identity holds only read roles, and plans with <code>-lock=false</code> so it never needs to write a lease. It can plan; it cannot apply. Because the repository is public, so are its logs, so raw plan output goes to a file and only a redacted copy is ever printed or posted to the pull request.</p>
+  <p>Getting to the first green run took three fixes, each more instructive than the last.</p>
+
+  <h3>1. The subject claim did not match</h3>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>first CI run &mdash; Init</figcaption>
+    <pre tabindex="0"><span class="t-err">Error: AADSTS700213: No matching federated identity record found for presented
+assertion subject 'repo:owner@&lt;id&gt;/entra-terraform@&lt;id&gt;:ref:refs/heads/main'.</span></pre>
+  </figure>
+  <p>I had written the credential's subject as <code>repo:owner/name:ref:refs/heads/main</code>. GitHub's newer immutable subject format embeds numeric owner and repository IDs, and the match must be exact. I changed the credential to the immutable format rather than switching the feature off: a repository <em>name</em> can be re-registered by someone else after a rename or deletion and would inherit the cloud trust, while an ID cannot be.</p>
+
+  <h3>2. Least privilege, one level too narrow</h3>
+  <p>The next run signed in, then failed with a 403 reading the storage account. I had scoped the CI identity's Reader role to the state <em>container</em>, but a data source in the configuration reads the storage <em>account</em>. The fix moved one role assignment up one scope: still read-only, and with account keys disabled there is nothing at account level that unlocks the data.</p>
+
+  <h3>3. CI's plan disagreed with mine</h3>
+  <p>Same code, same state: locally "No changes", in CI "4 to change, 1 to replace". This was the implicit-owner problem described above, and it became the explicit <code>admin_object_id</code> input. It is also the strongest argument I have for running CI on infrastructure repositories even when a laptop apply would do: a second identity exercising the same configuration finds a class of bug that one person running it never will.</p>
+
+  <h2>From a project to a foundation</h2>
+  <p>Once the pattern existed, two sibling projects needed pipeline identities of their own: a <a href="https://github.com/pobrienDev/entra-credential-monitor" target="_blank" rel="noopener">daily credential monitor</a> that scans the tenant for expiring secrets, and <a href="https://github.com/pobrienDev/entra-conditional-access" target="_blank" rel="noopener">Conditional Access policies as code</a>, which needs a read-only identity for plans and drift checks and a separate write identity reachable only from an approval-gated GitHub environment. App-only identities are not subject to Conditional Access, so the one permission that can rewrite the tenant's front door had to be unreachable without a human approving a deployment.</p>
+  <p>Those arrived as two more hand-written files, the same pattern written three different ways. A cleanup pass consolidated all four identities into one table: display name, which repository is trusted, which workflow contexts, which Graph permissions, which Azure roles. One set of <code>for_each</code> resources turns each row into an app registration, service principal, federated credentials, consent grants and role assignments. Adding an identity is now adding a row.</p>
+  <p>The refactor renamed every one of those resources in state, and three repositories' secrets depend on their client IDs, so recreating them was not an option. Terraform <code>moved</code> blocks recorded all thirty address changes; the plan, locally and in CI, showed thirty moves, zero to add and zero to destroy before anything was merged. The configuration shrank from 669 to 578 lines and from 19 input variables to 9, and the only runtime change was three description strings.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>Every resource applied against a real tenant, with the drift exercise and apply output in the README as evidence.</li>
+    <li>Pull requests get a redacted plan comment within about a minute, from an identity that holds no write roles and no secret.</li>
+    <li>Three audits of the public surface (every commit, every workflow log, pull request text and repository metadata) found zero tenant identifiers. The only GUIDs in CI logs were GitHub's own runner temp-file names and Microsoft trace IDs.</li>
+    <li>The repo is now the identity layer that two other public projects authenticate through.</li>
+  </ul>
+
+  <h2>What I would do differently in production</h2>
+  <ul>
+    <li>Purge protection on, longer soft-delete retention, and private endpoints for Key Vault and the state storage account.</li>
+    <li>A certificate or a managed identity instead of a client secret for the automation app, which would keep the credential out of state entirely.</li>
+    <li>A separate apply pipeline with a protected environment and required reviewers, rather than applying from a laptop.</li>
+    <li>Split state per environment once there is more than one.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/entra-terraform" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-terraform#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-terraform/blob/main/docs/remote-state-bootstrap.md" target="_blank" rel="noopener">Bootstrap write-up &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">PR: explicit owner &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-terraform/pull/4" target="_blank" rel="noopener">PR: consolidation &#8599;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
