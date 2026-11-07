@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: Conditional Access as code — Patrick O'Brien</title>
+<meta name="description" content="Seven Microsoft Entra Conditional Access policies as reviewed Terraform: a plan on every pull request, fail-closed guardrails in Python, an approval-gated apply with a separate write identity, and daily drift detection.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/entra-conditional-access.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/entra-conditional-access.html">
+<meta property="og:title" content="Case study: Conditional Access as code">
+<meta property="og:description" content="Seven Entra Conditional Access policies as reviewed Terraform, with fail-closed guardrails, an approval-gated write identity, and daily drift detection.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Policy as code</p>
+  <h1>Conditional Access policies that can only change through a reviewed pull request</h1>
+  <p class="lede">Conditional Access is the front door of a Microsoft Entra tenant, and it is normally edited by hand in a portal where one wrong checkbox can lock out every administrator. I moved a seven-policy baseline into Terraform and built the pipeline around it so that a dangerous change cannot merge, a merged change cannot apply without a human, and a portal edit cannot go unnoticed.</p>
+  <div class="stack-tags">
+    <span>Terraform</span><span>Microsoft Entra ID</span><span>Python</span><span>GitHub Actions (OIDC)</span><span>Policy as code</span>
+  </div>
+  <ul class="facts">
+    <li><b>7</b><span>policies in the baseline, all deployed in report-only</span></li>
+    <li><b>6</b><span>guardrail rules, every one fails closed</span></li>
+    <li><b>41</b><span>tests on the guardrails and the log redaction</span></li>
+    <li><b>2 / 1</b><span>identities, one human approval between them</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>Every Entra tenant I have worked in manages Conditional Access the same way: an administrator opens the portal, edits a policy, and clicks save. There is no diff, no second pair of eyes, no record of why, and no way to know a week later that someone loosened a policy. The failure mode is not hypothetical. A policy that targets all users and all apps with a block, or one that forgets to exclude the emergency accounts, locks the people who could fix it out of the tenant.</p>
+  <p>The goal was to make Conditional Access behave like any other reviewed code: every change is a pull request with a plan, the dangerous shapes are caught by a machine before a human has to spot them, applying needs an explicit approval, and drift from the portal is detected daily. It runs in my own sandbox tenant, and it builds on the identity and state layer from my <a href="entra-terraform.html">Terraform case study</a>.</p>
+
+  <h2>The baseline</h2>
+  <p>Seven policies, named <code>CA###-Who-What-Control</code> so they sort predictably and can be referenced unambiguously. Every one excludes the break-glass group, and every one was created in report-only.</p>
+  <table>
+    <thead><tr><th>Policy</th><th>Applies to</th><th>Control</th></tr></thead>
+    <tbody>
+      <tr><td>CA001</td><td>All users, all apps</td><td>Require MFA</td></tr>
+      <tr><td>CA002</td><td>Five privileged directory roles</td><td>Phishing-resistant authentication strength</td></tr>
+      <tr><td>CA003</td><td>Legacy authentication clients</td><td>Block</td></tr>
+      <tr><td>CA004</td><td>Azure management: portal, CLI, PowerShell</td><td>Require MFA</td></tr>
+      <tr><td>CA005</td><td>Sign-in risk medium or high</td><td>MFA, re-prompted every sign-in</td></tr>
+      <tr><td>CA006</td><td>User risk high</td><td>MFA and password change, every sign-in</td></tr>
+      <tr><td>CA007</td><td>Registering security info outside trusted locations</td><td>Require MFA</td></tr>
+    </tbody>
+  </table>
+  <p>Two of those overlap on purpose. CA004 looks redundant next to CA001, since Azure management is one of "all apps", but if someone later adds an exclusion to CA001 the management plane stays protected. CA003 exists because legacy protocols cannot do MFA at all, so CA001 never applies to them; only a block stops them.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>Terraform reads the break-glass group; it never owns it.</b> The two emergency accounts and their group were created by hand, and the configuration only looks the group up. A bad apply can therefore never delete it or change who is in it. The lookup also carries two postconditions: if the group has fewer than two members, or is not the group its name says it is, Terraform refuses to plan anything. An exclusion group with no members excludes nobody, and every policy would then apply to the emergency accounts too.</p></div>
+
+  <div class="decision"><p><b>The safety rules are code, not memory.</b> CI converts the plan to JSON and a Python script inspects every Conditional Access policy in it. The rules run against every policy in the plan, not just the ones changing, so a policy that drifted in the portal and was then adopted into code still fails. The script fails closed: a value Terraform cannot know until apply time counts as wrong. And the break-glass group's ID comes from CI configuration, never from the repository, so a pull request cannot redefine which group must be excluded.</p></div>
+
+  <div class="decision"><p><b>Two identities, because app-only identities are not subject to Conditional Access.</b> That is the uncomfortable fact underneath this whole design: an identity holding <code>Policy.ReadWrite.ConditionalAccess</code> could rewrite every policy in the tenant and no policy could stop it. So the write permission lives on a separate app registration whose federated credential trusts only the approval-gated <code>production</code> environment. A job that skips the environment gets a different token subject and cannot obtain a token for the write identity at all. Neither identity has a client secret; both authenticate through GitHub OIDC federation.</p></div>
+
+  <div class="decision"><p><b>Report-only first, enforce one at a time.</b> New policies are created in report-only, and a guardrail refuses to create one enabled. Switching a policy to enforced is its own reviewed pull request, taken after validating against sign-in logs and What If, one policy at a time. The whole baseline is deployed; enforcement is the next phase.</p></div>
+
+  <div class="decision"><p><b>Deleting a policy is a deliberate act.</b> Removing, replacing or disabling a policy fails CI unless a variable is set explicitly for that run. Protection should not disappear because a file was deleted in passing.</p></div>
+
+  <h2>The guardrails</h2>
+  <table>
+    <thead><tr><th>Rule</th><th>What it prevents</th></tr></thead>
+    <tbody>
+      <tr><td>Break-glass excluded</td><td>A policy that could lock out every admin, including the emergency accounts</td></tr>
+      <tr><td>Report-only on create</td><td>Enforcing an untested policy on day one</td></tr>
+      <tr><td>Naming and unique numbers</td><td>Unreadable, unsortable, ambiguous policy lists</td></tr>
+      <tr><td>No silent removal</td><td>Deleting, replacing or disabling a policy without an explicit, reviewed decision</td></tr>
+      <tr><td>No all-users, all-apps block</td><td>The classic self-lockout. CA003 passes because it targets only legacy clients</td></tr>
+      <tr><td>Risk policies re-prompt</td><td>An existing session carrying a risky sign-in through unchallenged</td></tr>
+    </tbody>
+  </table>
+  <p>The checks are about two hundred lines of standard-library Python with tests that build small plans in the real <code>terraform show -json</code> shape, plus one redacted plan captured from the tenant so the fixtures cannot drift from reality. The same rules could be written in Rego and run with Conftest, which is the more common tool; Python keeps them in the stack the rest of my projects use, with no extra binary in CI.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>plan on PR &mdash; guardrail verdict<span class="t-note">from a deliberate failure test; IDs redacted</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform show -json tfplan &gt; plan.json</span>
+<span class="t-p">$</span> <span class="t-c">BREAKGLASS_GROUP_ID=&lt;group-id&gt; python3 ../guardrails/check_plan.py plan.json</span>
+<span class="t-err">::error::CA004-AllUsers-AzureMgmt-RequireMFA: must exclude the break-glass group</span>
+<span class="t-err">guardrails: 1 problem(s) found</span>
+
+  # azuread_conditional_access_policy.ca004 will be updated in-place
+  ~ resource "azuread_conditional_access_policy" "ca004" {
+      ~ users {
+          ~ excluded_groups = [
+              <span class="t-hl">- "&lt;guid&gt;",</span>
+            ]
+        }
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+<span class="t-o">Guardrails: FAILED &mdash; the pull request cannot merge.</span></pre>
+  </figure>
+
+  <h2>The pipeline</h2>
+  <table>
+    <thead><tr><th>Workflow</th><th>Identity</th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td>plan</td><td>ca-plan (read)</td><td>On every pull request: guardrail tests, format, validate, plan, guardrails on the plan JSON, then a redacted plan and verdict posted to the PR. <code>main</code> requires both checks to pass before merging.</td></tr>
+      <tr><td>apply</td><td>ca-plan, then ca-apply (write)</td><td>On merge: a read-only preview, then the <code>production</code> environment waits for a human. After approval the write identity re-plans, re-runs the guardrails, and applies only that saved plan.</td></tr>
+      <tr><td>drift</td><td>ca-plan</td><td>Daily: a plan with a detailed exit code. Drift opens or updates one issue with a redacted diff; no drift closes it.</td></tr>
+    </tbody>
+  </table>
+  <p>All four plans run through one composite action, so there is a single definition of how the repository initialises and plans. The logs are public, so every line of Terraform output passes through a redaction script, which masks GUIDs, tenant domains, storage names and IP ranges and has its own tests. The plan JSON never leaves the runner.</p>
+
+  <h2>The bug that made the safety net decorative</h2>
+  <p>In a cleanup pass a few weeks after the first version shipped, I found that the guardrail step had never been able to fail a pull request. The step piped the script's output through <code>tee</code> so it would show in the log, and GitHub's default shell for <code>run</code> steps does not set <code>pipefail</code>. The step's exit status was <code>tee</code>'s, which is always zero. Every guardrail check had been green, including the ones that should not have been.</p>
+  <p>The fix captured the script's exit code explicitly. The more important fix was proving it: a throwaway pull request that strips CA004's break-glass exclusion, which must go red and must say <b>Guardrails: FAILED</b> in its comment. It does, and it stays open and unmerged as the standing test that the net still catches. A safety control that has never been seen to fail has not been tested.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>the throwaway PR's checks</figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">gh pr checks 13</span>
+<span class="t-o">guardrail tests   pass</span>
+<span class="t-err">plan              fail</span>    Guardrails: FAILED &mdash; the pull request cannot merge.</pre>
+  </figure>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>The full seven-policy baseline is deployed to a real tenant in report-only, every policy excluding the break-glass group, with the exclusion enforced by a machine rather than a checklist.</li>
+    <li>Every change since the first commit has gone through a pull request with a plan and a guardrail verdict. Thirteen policy and pipeline PRs landed in the first day; the cleanup that found the <code>tee</code> bug was the fourteenth.</li>
+    <li>The daily drift check has run green every day since it was enabled. It has not had to open an issue yet, which is the point: the day it does, the diff is already redacted and waiting.</li>
+    <li>The write permission for the tenant's front door is reachable from exactly one place, and that place requires a named human to click approve.</li>
+  </ul>
+
+  <h2>What comes next, and what I would do differently in production</h2>
+  <ul>
+    <li>Enforce the policies one at a time, validating each against sign-in logs and What If before switching it from report-only.</li>
+    <li>Require two reviewers on the production environment rather than one, and a second approver for any pull request that touches an enforced policy.</li>
+    <li>Add Entra's own protections alongside the pipeline: a policy that requires phishing-resistant MFA for the Conditional Access Administrator role, and alerting on any policy change not made by the apply identity.</li>
+    <li>Exercise the break-glass accounts on a schedule, so the emergency path is known to work before it is needed.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/entra-conditional-access" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-conditional-access#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-conditional-access/blob/main/guardrails/check_plan.py" target="_blank" rel="noopener">Guardrails &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-conditional-access/pull/12" target="_blank" rel="noopener">PR: the tee bug &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-conditional-access/pull/13" target="_blank" rel="noopener">PR: standing failure test &#8599;</a>
+    <a href="entra-terraform.html">Terraform case study &rarr;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
