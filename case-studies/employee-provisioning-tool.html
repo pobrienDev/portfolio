@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: Employee provisioning tool — Patrick O'Brien</title>
+<meta name="description" content="A Python CLI that turns an HR form into Entra ID onboarding and lockout-first offboarding through the Microsoft Graph API: app-only auth with scoped permissions, dry-run everywhere, an audit log, and 246 offline tests.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/employee-provisioning-tool.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/employee-provisioning-tool.html">
+<meta property="og:title" content="Case study: Employee provisioning tool">
+<meta property="og:description" content="An HR form becomes one reviewed command: Entra ID onboarding and lockout-first offboarding through Microsoft Graph, with scoped app-only permissions, dry-run and an audit log.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Identity automation</p>
+  <h1>Turning an HR form into one reviewed command for onboarding and offboarding</h1>
+  <p class="lede">At a multi-property organization, every hire meant a manual walk through the Entra admin center, and every departure meant a checklist that could be missed. I built a Python CLI that does the Microsoft Graph side of both in a single command, with a dry run for everything, lockout before cleanup, and an audit line for every write.</p>
+  <div class="stack-tags">
+    <span>Python</span><span>Microsoft Graph API</span><span>Microsoft Entra ID</span><span>Microsoft 365</span><span>pytest</span><span>GitHub Actions</span>
+  </div>
+  <ul class="facts">
+    <li><b>8</b><span>commands, from discover to terminate</span></li>
+    <li><b>246</b><span>offline tests, up from 8 at the first release</span></li>
+    <li><b>3</b><span>Graph application permissions at the core, each the least-privileged option</span></li>
+    <li><b>0</b><span>secrets, credentials or personal data in the repository</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>A hire arrives as a form submission attached to a help-desk ticket: name, title, property, start date, which platforms they need. Turning that into a working account was a sequence of portal screens, each with a chance to mistype a name, pick the wrong license, or forget a group. Some hires take over an existing role account rather than getting a new one, which added a second, different sequence. Offboarding was worse, because a missed step there is not a support ticket, it is a former employee with a working login.</p>
+  <p>The tool collapses each sequence into one command driven by a small YAML file built from the form. It creates or reuses the account, assigns the license, joins the right groups, and drafts the credential email; on departure it disables the account and revokes every session first, then strips groups and licenses. Anything Graph's application model cannot or should not do is printed as a ready-to-paste step rather than silently skipped.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>App-only authentication at the core, operator sign-in only where it has to be.</b> The tool authenticates as an app registration with client credentials, so it can only ever touch the tenant it is configured for, and every write command prints that tenant's ID and domain before doing anything. The exceptions are deliberate and opt-in: Exchange distribution lists, shared-mailbox conversion and drafts in the operator's own mailbox run as the signed-in operator behind explicit flags, borrowing the operator's rights for that moment instead of enlarging the app's.</p></div>
+
+  <div class="decision"><p><b>Least privilege means reading the reference, not the first permission that works.</b> The app carries three application permissions for its core job, and each was chosen against Microsoft's Graph reference. <code>GroupMember.ReadWrite.All</code> rather than <code>Group.ReadWrite.All</code>, because the tool adds and removes members and never needs to create, delete or reconfigure a group. <code>User.RevokeSessions.All</code> because it is the only application permission the reference lists for session revocation. Password-profile writes and sign-in activity reads are added only if a feature needs them, and the tenant-wide application form of a permission is never taken where a delegated one does the job. The same list is codified in Terraform against a sandbox tenant in my <a href="entra-terraform.html">infrastructure case study</a>.</p></div>
+
+  <div class="decision"><p><b>Lockout first.</b> Offboarding disables the account and revokes every session before any cleanup, and the tests pin that order. If anything fails later in the run, the person is already out. Related: a failed shared-mailbox conversion leaves the licenses in place, because unlicensing an unconverted mailbox starts its deletion clock.</p></div>
+
+  <div class="decision"><p><b>Reuse or create is a human decision.</b> The <code>discover</code> command reports a role account's status, whose name is on it, whether it is enabled, when it last signed in. The operator chooses <code>reuse</code> or <code>new</code>; the tool does the clicking either way. It also refuses the obvious mistakes: creating a second account for a name created in the last seven days, reusing an account that is still enabled, or stacking a license on top of one outside the hire's chain, unless the operator overrides explicitly.</p></div>
+
+  <div class="decision"><p><b>Nothing sensitive in the repo, and no passwords in the log.</b> The <code>.gitignore</code> was the first commit. Credentials live in a gitignored <code>.env</code>, tenant IDs in a gitignored config, per-hire files are never committed, and the audit log records actions taken, never passwords or contact details. The README also says plainly where that stops: the audit log is a local file the operator could edit, so for an authoritative record, Entra's own audit log is the source, and every change the tool makes appears there under the app's identity.</p></div>
+
+  <h2>What a run looks like</h2>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>provision.py &mdash; dry-run offboarding<span class="t-note">sample run, placeholder data</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python provision.py terminate manager619 --dry-run</span>
+Terminating:
+<span class="t-o">  Property Manager at Elm Court  manager619@example.com                            [enabled]  Property Manager</span>
+  <span class="t-hl">[dry-run]</span> would disable the account and revoke every session
+  <span class="t-hl">[dry-run]</span> would remove from group: Elm Court Staff
+  <span class="t-hl">[dry-run]</span> would remove from group: Site Managers
+  <span class="t-hl">[dry-run]</span> would remove 1 license(s)
+  manual step if mail must be retained: convert the mailbox to shared (Exchange admin center)</pre>
+  </figure>
+  <p>Without <code>--yes</code> a write command only previews; with <code>--dry-run</code> it previews even alongside <code>--yes</code>, and touches neither the tenant, the clipboard nor Outlook. A run exits non-zero when work remains for a human, such as a distribution list removal that has to happen in Exchange, or a directory role the account holds, so a script calling it cannot mistake "printed a follow-up" for "done".</p>
+
+  <h2>Testing against a tenant you must never touch</h2>
+  <p>The suite started at eight tests. The first expansion added a fake Graph client that records every call in order, which is what lets the tests assert things like "disable before revoke before cleanup" rather than just "it returned". Every test replaces the Graph client, the config and the log directory, and the environment loader is stubbed, so nothing in the suite can read a real <code>.env</code> or reach a real tenant. CI runs it on two Python versions on every push.</p>
+  <p>Before trusting the suite I checked that it could fail: seven deliberate mutations in a scratch copy, such as skipping session revocation or letting dry-run write, and each one turned a test red. A test that has never been seen to fail is not evidence of much.</p>
+
+  <h2>Two bugs worth telling</h2>
+
+  <h3>An apostrophe that could run commands in Exchange</h3>
+  <p>The opt-in distribution-list step generates a PowerShell script for an Exchange Online session. It built single-quoted strings from each list's address without doubling apostrophes. An apostrophe is legal in an email address, so a list like <code>o'brien-team@example.com</code> produced a script that failed to parse, and a hostile address could have closed the string and run whatever followed inside an admin session. The fix routes every value through the one escaping helper the script already used for the account name and path. Two tests were written first, one with a hostile address that must stay data, and both failed against the old code before the fix made them pass.</p>
+
+  <h3>Forty-eight audit findings, and the ones I said no to</h3>
+  <p>Two months in, I ran a full audit of the tool and worked through all forty-eight findings in one pull request, re-checking each against the current code first. The test count went from 53 to 241. Some findings changed behaviour that a user would notice: <code>reuse</code> now requires <code>--yes</code> like <code>terminate</code>; the <code>.env</code> next to the script wins over variables left in the shell; the delegated token cache moved out of the repository folder into an owner-only profile directory; a create is no longer retried after a gateway timeout, because the first attempt may have succeeded.</p>
+  <p>Some findings I deliberately did not fix, and the pull request says so: moving to a certificate credential is an architecture change, so the README documents the secret's blast radius and handling instead; the initial password still reaches the clipboard, and the banner now says so rather than pretending otherwise. The audit also produced a permission table for the production app registration, with the reference page for each entry, showing which permissions to add, which to replace with a narrower one, and why.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>Onboarding and offboarding each run as one reviewed command instead of a portal walkthrough, with the same steps every time.</li>
+    <li>The departure path cannot leave a working login behind by accident: lockout is the first action, and anything a human still has to do fails the run until it is done.</li>
+    <li>246 offline tests on two Python versions, green on every push, and a suite that has been shown to catch the mistakes it exists to catch.</li>
+    <li>Two sibling projects grew out of it: a published CLI that flags stale accounts, and the Terraform that provisions the identity the tool runs as.</li>
+  </ul>
+
+  <h2>What I would do differently next</h2>
+  <ul>
+    <li>A certificate or managed identity instead of a client secret, which removes the secret's blast radius rather than documenting it.</li>
+    <li>A Temporary Access Pass instead of an initial password on the clipboard, so no reusable credential ever passes through the operator's machine.</li>
+    <li>Pull the form fields from the help-desk ticket automatically. It is designed for and blocked on inconsistent submissions, which is a process fix before it is a code fix.</li>
+    <li>A fully pinned, hash-checked dependency set for the CI environment.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/employee-provisioning-tool" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/employee-provisioning-tool#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/2" target="_blank" rel="noopener">PR: the apostrophe bug &#8599;</a>
+    <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/4" target="_blank" rel="noopener">PR: the audit &#8599;</a>
+    <a href="https://github.com/pobrienDev/employee-provisioning-tool/pull/1" target="_blank" rel="noopener">PR: the test suite &#8599;</a>
+    <a href="entra-terraform.html">Terraform case study &rarr;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
