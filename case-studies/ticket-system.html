@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: Ticket Management System — Patrick O'Brien</title>
+<meta name="description" content="A full-stack helpdesk ticketing app in React and FastAPI: JWT auth, owner-scoped access that answers 404 instead of 403, an audit row for every field change, SLA due dates by priority, 192 backend and 141 frontend tests, and a CI pipeline that deploys only from green main.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/ticket-system.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/ticket-system.html">
+<meta property="og:title" content="Case study: Ticket Management System">
+<meta property="og:description" content="A helpdesk ticketing app where every change is attributable: React and FastAPI, JWT auth, scoped access, an audit trail, SLA by priority, and 330+ tests behind a deploy that waits for green CI.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Full-stack</p>
+  <h1>A helpdesk ticket system where every change has a name on it</h1>
+  <p class="lede">Help-desk work is a queue of small decisions: who owns this, how urgent is it, is it done. The tools I used day to day were good at storing tickets and bad at explaining them. I built a ticketing app whose API records who changed which field, from what, to what, and whose access rules never confirm that a ticket you cannot see exists. It is live, free-tier hosted, and deployed only from a main branch that has passed every check.</p>
+  <div class="stack-tags">
+    <span>React (Vite)</span><span>FastAPI</span><span>SQLAlchemy &amp; Alembic</span><span>PostgreSQL</span><span>JWT</span><span>pytest &amp; Vitest</span><span>Docker</span><span>GitHub Actions</span>
+  </div>
+  <ul class="facts">
+    <li><b>192</b><span>backend tests, 96% coverage; CI fails under 85%</span></li>
+    <li><b>141</b><span>frontend tests with Vitest and Testing Library</span></li>
+    <li><b>18</b><span>API routes, every ticket read scoped to the caller</span></li>
+    <li><b>6</b><span>fields whose every change becomes an audit row</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>A ticket queue is shared state edited by several people at once. The questions that matter later are not "what is the status" but "who moved it to resolved, when, and what was it before". Most small ticketing apps answer the first and shrug at the second. The other common failing is access control that leaks: a user asks for a ticket that is not theirs and gets a 403, which tells them the ticket exists.</p>
+  <p>The app is a React front end over a FastAPI service with PostgreSQL behind it. Users register and sign in, open tickets with a priority and category, comment on them, and move them through an explicit lifecycle. Admins assign tickets, create categories and delete tickets. Every edit to a ticket's status, assignee, priority, title, description or category writes an audit row with the actor, the old value and the new one, and the ticket's history is one request away.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>The audit trail lives in the write path, not in a trigger or middleware.</b> The one endpoint that edits a ticket compares each incoming field with the stored value and records a row only for the ones that changed, so re-sending the same value leaves no trace and a single request that changes three fields leaves three rows. Values are clipped to 120 characters so a rewritten description does not bloat the history. It is also honest about its edges: creating a ticket, deleting one and adding a comment are not audited, and the history is deleted with its ticket.</p></div>
+
+  <div class="decision"><p><b>Out of scope means 404, not 403.</b> A non-admin sees only tickets they own or are assigned. Asking for any other ticket returns the same not-found answer as asking for one that never existed, so the API never confirms a ticket ID is real to someone who should not know. The owner is always taken from the token, never from the request body.</p></div>
+
+  <div class="decision"><p><b>The lifecycle is a map, not a free text field.</b> Five statuses, from <code>new</code> to <code>closed</code>, with an explicit table of allowed transitions enforced in the API and mirrored in the database as an enum. A closed ticket can go nowhere but back to open, an illegal move is refused with a 409, and the client's own transition table is tested against the same map. The migration that introduced the <code>new</code> status also added the SLA columns, so the rule and the data arrived together.</p></div>
+
+  <div class="decision"><p><b>Authentication is small on purpose, and the limits are stated.</b> Stateless JWTs signed with HS256, sixty-minute expiry, bcrypt passwords with an 8 to 72 byte cap, and a signing secret that must be set and at least 32 bytes or the service refuses to start. Unknown emails are checked against a dummy hash so login timing does not reveal which accounts exist, and login and registration are rate limited per client IP. There is no refresh token and no revocation; a token is valid until it expires. That is the right trade for a portfolio-scale app, and the README says so instead of implying otherwise.</p></div>
+
+  <div class="decision"><p><b>Two roles, and admin is a flag, not a feature.</b> There is one boolean on the user, and the only way to set it is the seed script. No endpoint promotes a user, so an attacker who gains one account cannot talk the API into a second role. The cost is that user administration happens outside the app, which I would change before this ran for a real team.</p></div>
+
+  <h2>Who can do what</h2>
+  <table>
+    <thead><tr><th>Action</th><th>User</th><th>Admin</th></tr></thead>
+    <tbody>
+      <tr><td>Create a ticket, comment on a visible ticket</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Read a ticket, its comments and its audit history</td><td>Owned or assigned only; anything else is 404</td><td>All tickets</td></tr>
+      <tr><td>Edit status, priority, title, description, category</td><td>As owner or assignee</td><td>Yes</td></tr>
+      <tr><td>Assign or reassign a ticket</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Delete a ticket, create a category, list users</td><td>No</td><td>Yes</td></tr>
+    </tbody>
+  </table>
+  <p>The list endpoint filters by status, category, assignee and owner, searches title and description with the wildcard characters escaped so a search for <code>%</code> means a percent sign, sorts by priority, creation or due date, and pages with a limit capped at 100. Every string field has a length cap, from 200 characters for a title to 10,000 for a description, enforced in the schema before anything reaches the database.</p>
+
+  <h2>SLA due dates by priority</h2>
+  <p>Each priority maps to a response window, four hours for the most urgent down to two weeks for the least, and a ticket's due date is set from that window when it is created. Overdue is a derived state, unresolved and past due, so nothing has to run on a schedule to flag it. The first version had a bug here, described below.</p>
+
+  <h2>Testing on two databases</h2>
+  <p>The backend suite runs against in-memory SQLite locally, which keeps a full run under a minute and a half, and against a PostgreSQL 16 service in CI, which is what production uses. The CI job does more than run tests: it applies every migration, runs Alembic's own check for model drift, verifies the status enum and the priority constraint directly against the database, then downgrades to nothing and upgrades again, so a migration that cannot be reversed fails the build. A second job lints, tests and builds the front end. A third builds the Docker image and import-checks the application inside it, which catches a missing dependency but does not start the server; a pull request that boots the real container and waits for its health check is open and not yet merged.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>pytest &mdash; backend suite<span class="t-note">local run on SQLite, output condensed</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pytest --cov=app</span>
+<span class="t-o">tests/test_auth.py ............................</span>
+<span class="t-o">tests/test_lifecycle.py ..................................</span>
+<span class="t-o">tests/test_tickets.py ...........................................</span>
+<span class="t-o">...</span>
+TOTAL                                        96%
+<span class="t-hl">Required test coverage of 85% reached.</span> Total coverage: 96.17%
+<span class="t-hl">192 passed</span> in 72.41s</pre>
+  </figure>
+  <p>Deployment is the last job and depends on the other three. It runs only for pushes to <code>main</code>, under a concurrency group so two merges cannot race, and it calls the host's deploy hook with the exact commit it just tested. The host's own auto-deploy is off, so there is exactly one way code reaches production: through a green pipeline.</p>
+
+  <h2>Three fixes worth telling</h2>
+
+  <h3>An escalated ticket kept its old deadline</h3>
+  <p>The due date was computed once, at creation. Raise a ticket from priority 3 to priority 1 and it kept its three-day deadline instead of the four-hour one, which defeats the point of escalating. The fix recomputes the due date from the ticket's creation time using the new priority, so an escalation can make a ticket immediately overdue; that is the correct outcome, since the clock started when the ticket was opened. Four tests cover it: priority changes recompute, the change is visible to the next reader, editing other fields leaves the date alone, and re-sending the same priority leaves it alone. The pull request records that the tests were written first and three of them failed against the old code.</p>
+
+  <h3>A free tier that sleeps</h3>
+  <p>The API runs on a free tier that spins down when idle, and a cold start can take half a minute. The first version of the front end showed that as an error. The fix made the client honest about it: a fifteen-second timeout on each request, up to eight retries ten seconds apart while the service wakes, a warm-up ping to the health endpoint the moment the page loads, and a message on the login page that says the server is waking and which attempt this is. Eleven tests pin the retry behaviour. The portfolio card says the same thing the app does: the first request can take a minute.</p>
+
+  <h3>Sixteen audit items in one pull request</h3>
+  <p>Two months after the first commit I audited the whole repository and fixed the sixteen clear-cut findings together. Some were correctness: the seed script accepted a blank admin password; the ticket update did not lock the row, so two concurrent edits could interleave; search did not escape SQL wildcards. Some were operational: the container now <code>exec</code>s the server so it runs as PID 1 and receives signals, the deploy hook passes the commit SHA, the enum is dropped on downgrade so the migration really is reversible, and development dependencies are split from runtime ones. The test count went from 176 to 192 in that change.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>A ticket's full history, who changed what and when, is a single request, and the rule that produces it has one owner in the code.</li>
+    <li>Access control that cannot be probed: outside your scope, every ticket ID looks the same.</li>
+    <li>192 backend tests at 96% coverage and 141 frontend tests, run on every push and pull request, with a Postgres-backed migration round trip in CI.</li>
+    <li>Live on free-tier hosting with a client that handles the cold start, and a deploy path that only starts from green main.</li>
+  </ul>
+
+  <h2>What I would do differently next</h2>
+  <ul>
+    <li>Refresh tokens with server-side revocation, and the access token out of local storage. The current design is stated honestly, but it is the first thing I would change for a real team.</li>
+    <li>Audit ticket creation, deletion and comments, so the history starts at the beginning.</li>
+    <li>Boot the container in CI and wait for its health check, which the open pull request already does.</li>
+    <li>User administration endpoints, so promoting an admin does not mean running a script against the database.</li>
+    <li>Shared storage for the rate limiter, so limits hold across more than one API process.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/ticket-system" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/ticket-system#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://ticket-system-azure-omega.vercel.app" target="_blank" rel="noopener">Live demo &#8599;</a>
+    <a href="https://github.com/pobrienDev/ticket-system/pull/8" target="_blank" rel="noopener">PR: SLA due dates &#8599;</a>
+    <a href="https://github.com/pobrienDev/ticket-system/pull/13" target="_blank" rel="noopener">PR: cold start &#8599;</a>
+    <a href="https://github.com/pobrienDev/ticket-system/pull/16" target="_blank" rel="noopener">PR: the audit &#8599;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
