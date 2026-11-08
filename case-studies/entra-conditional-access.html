@@ -77,7 +77,7 @@
 
   <div class="decision"><p><b>The safety rules are code, not memory.</b> CI converts the plan to JSON and a Python script inspects every Conditional Access policy in it. The desired-state rules run against every policy in the plan, not just the ones changing, so a policy that drifted in the portal and was then adopted into code still fails. The script fails closed: a value Terraform cannot know until apply time counts as wrong. And the break-glass group's ID comes from CI configuration, never from the repository, so a pull request cannot redefine which group must be excluded.</p></div>
 
-  <div class="decision"><p><b>Two identities, because app-only identities are not subject to Conditional Access.</b> That is the uncomfortable fact underneath this whole design: an identity holding <code>Policy.ReadWrite.ConditionalAccess</code> could rewrite every policy in the tenant and no policy could stop it. So the write permission lives on a separate app registration whose federated credential trusts only the approval-gated <code>production</code> environment. A job that skips the environment gets a different token subject and cannot obtain a token for the write identity at all. Neither identity has a client secret; both authenticate through GitHub OIDC federation.</p></div>
+  <div class="decision"><p><b>Two identities, because app-only identities are not subject to Conditional Access.</b> That is the uncomfortable fact underneath this whole design: an identity holding <code>Policy.ReadWrite.ConditionalAccess</code> could rewrite every policy in the tenant and no policy could stop it. So the write permission lives on a separate app registration whose federated credential trusts only the repository&rsquo;s approval-gated GitHub environment, named <code>production</code> although the tenant it deploys to is my personal sandbox. A job that skips the environment gets a different token subject and cannot obtain a token for the write identity at all. Neither identity has a client secret; both authenticate through GitHub OIDC federation.</p></div>
 
   <div class="decision"><p><b>Report-only first, enforce one at a time.</b> New policies are created in report-only, and a guardrail refuses to create one enabled. Switching a policy to enforced is its own reviewed pull request, taken after validating against sign-in logs and What If, one policy at a time. The whole baseline is deployed; enforcement is the next phase.</p></div>
 
@@ -121,7 +121,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
     <thead><tr><th>Workflow</th><th>Identity</th><th>What happens</th></tr></thead>
     <tbody>
       <tr><td>plan</td><td>ca-plan (read)</td><td>On every pull request: guardrail tests, format, validate, plan, guardrails on the plan JSON, then a redacted plan and verdict posted to the PR. <code>main</code> requires both checks to pass before merging.</td></tr>
-      <tr><td>apply</td><td>ca-plan, then ca-apply (write)</td><td>On merge: a read-only preview, then the <code>production</code> environment waits for a human. After approval the write identity re-plans, re-runs the guardrails, and applies only that saved plan.</td></tr>
+      <tr><td>apply</td><td>ca-plan, then ca-apply (write)</td><td>On merge: a read-only preview, then the <code>production</code> GitHub environment waits for a human. After approval the write identity re-plans, re-runs the guardrails, and applies only that saved plan.</td></tr>
       <tr><td>drift</td><td>ca-plan</td><td>Daily: a plan with a detailed exit code. Drift opens or updates one issue with a redacted diff; no drift closes it.</td></tr>
     </tbody>
   </table>
@@ -148,7 +148,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
   <h2>What comes next, and what I would do differently in production</h2>
   <ul>
     <li>Enforce the policies one at a time, validating each against sign-in logs and What If before switching it from report-only.</li>
-    <li>Require two reviewers on the production environment rather than one, and a second approver for any pull request that touches an enforced policy.</li>
+    <li>Require two reviewers on the GitHub environment rather than one, and a second approver for any pull request that touches an enforced policy.</li>
     <li>Add Entra's own protections alongside the pipeline: a policy that requires phishing-resistant MFA for the Conditional Access Administrator role, and alerting on any policy change not made by the apply identity.</li>
     <li>Exercise the break-glass accounts on a schedule, so the emergency path is known to work before it is needed.</li>
   </ul>
