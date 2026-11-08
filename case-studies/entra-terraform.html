@@ -106,7 +106,7 @@
 
       <rect x="508" y="34" width="212" height="70" rx="5" class="box"/>
       <text x="520" y="56" class="t b">Microsoft Graph</text>
-      <text x="520" y="74" class="d">4 application permissions,</text>
+      <text x="520" y="74" class="d">5 application permissions,</text>
       <text x="520" y="90" class="d">admin consent granted as code</text>
 
       <!-- divider -->
@@ -171,7 +171,7 @@
 
   <h2>Decisions worth defending</h2>
 
-  <div class="decision"><p><b>Permissions came from the code that uses them, not from a guess.</b> I read both tools' Graph calls and granted the four application permissions they need. The two that let an app reset passwords and remove MFA methods are behind a flag that defaults to off: a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</p></div>
+  <div class="decision"><p><b>Permissions came from the code that uses them, not from a guess.</b> I read both tools' Graph calls and granted the five application permissions they need: user writes, group-member writes, session revocation, sign-in activity, and license counts. The first apply granted the broader group permission; it was narrowed to the member-level one once the production tool had proven the narrower list. The two that let an app reset passwords and remove MFA methods are behind a flag that defaults to off: a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</p></div>
 
   <div class="decision"><p><b>Key Vault keeps the secret out of code, not out of state.</b> Terraform generates the secret, so the value is recorded in state in plaintext. That is unavoidable with this approach, and I say so in the README rather than claiming otherwise. It is also the real justification for the next decision.</p></div>
 
