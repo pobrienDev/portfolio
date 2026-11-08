@@ -72,6 +72,101 @@
     </tbody>
   </table>
 
+  <figure class="diagram" aria-labelledby="diagram-title">
+    <svg viewBox="0 0 720 470" role="img" aria-labelledby="diagram-title diagram-desc">
+      <title id="diagram-title">How callers authenticate through this repo's identities to Azure and Entra</title>
+      <desc id="diagram-desc">Three columns. Left: who authenticates. Middle: the identity defined in this repository. Right: what that identity can reach. The Python tools use a client secret stored in Key Vault; every GitHub Actions job uses an OIDC token and has no secret.</desc>
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="head"/>
+        </marker>
+      </defs>
+
+      <text x="0" y="14" class="col">Who authenticates</text>
+      <text x="262" y="14" class="col">Identity in this repo</text>
+      <text x="508" y="14" class="col">What it can reach</text>
+
+      <!-- Row A: automation tools -->
+      <rect x="0" y="34" width="212" height="70" rx="5" class="box"/>
+      <text x="12" y="56" class="t b">Python automation tools</text>
+      <text x="12" y="74" class="d">employee-provisioning-tool</text>
+      <text x="12" y="90" class="d">entra-stale-accounts</text>
+
+      <path d="M 212 69 L 258 69" class="arrow" marker-end="url(#ah)"/>
+      <text x="214" y="62" class="lbl">client secret</text>
+
+      <rect x="262" y="34" width="232" height="70" rx="5" class="box id"/>
+      <text x="274" y="56" class="t id">graph-automation</text>
+      <text x="274" y="74" class="d">app registration + service principal</text>
+      <text x="274" y="90" class="d">secret in Key Vault, rotates every 180 days</text>
+
+      <path d="M 494 69 L 504 69" class="arrow" marker-end="url(#ah)"/>
+
+      <rect x="508" y="34" width="212" height="70" rx="5" class="box"/>
+      <text x="520" y="56" class="t b">Microsoft Graph</text>
+      <text x="520" y="74" class="d">4 application permissions,</text>
+      <text x="520" y="90" class="d">admin consent granted as code</text>
+
+      <!-- divider -->
+      <line x1="0" y1="128" x2="720" y2="128" class="arrow" stroke-dasharray="3 5"/>
+      <text x="0" y="150" class="note">GitHub Actions jobs: each run gets a short-lived OIDC token; Entra trusts it through a federated credential. No secret exists.</text>
+
+      <!-- Row B: ci -->
+      <rect x="0" y="166" width="212" height="52" rx="5" class="box"/>
+      <text x="12" y="187" class="t b">entra-terraform</text>
+      <text x="12" y="204" class="d">plan on every pull request</text>
+      <path d="M 212 192 L 258 192" class="arrow" marker-end="url(#ah)"/>
+      <text x="222" y="185" class="lbl">OIDC</text>
+      <rect x="262" y="166" width="232" height="52" rx="5" class="box id"/>
+      <text x="274" y="187" class="t id">ci</text>
+      <text x="274" y="204" class="d">read only</text>
+      <path d="M 494 192 L 504 192" class="arrow" marker-end="url(#ah)"/>
+      <rect x="508" y="166" width="212" height="52" rx="5" class="box"/>
+      <text x="520" y="187" class="t">Entra apps, resource group,</text>
+      <text x="520" y="204" class="t">Key Vault secret, state blob</text>
+
+      <!-- Row C: credmon -->
+      <rect x="0" y="232" width="212" height="52" rx="5" class="box"/>
+      <text x="12" y="253" class="t b">entra-credential-monitor</text>
+      <text x="12" y="270" class="d">daily scan for expiring secrets</text>
+      <path d="M 212 258 L 258 258" class="arrow" marker-end="url(#ah)"/>
+      <text x="222" y="251" class="lbl">OIDC</text>
+      <rect x="262" y="232" width="232" height="52" rx="5" class="box id"/>
+      <text x="274" y="253" class="t id">credmon</text>
+      <text x="274" y="270" class="d">read only</text>
+      <path d="M 494 258 L 504 258" class="arrow" marker-end="url(#ah)"/>
+      <rect x="508" y="232" width="212" height="52" rx="5" class="box"/>
+      <text x="520" y="253" class="t">App credential metadata,</text>
+      <text x="520" y="270" class="t">owner display names</text>
+
+      <!-- Row D: ca-plan / ca-apply -->
+      <rect x="0" y="298" width="212" height="86" rx="5" class="box"/>
+      <text x="12" y="319" class="t b">entra-conditional-access</text>
+      <text x="12" y="337" class="d">pull requests, daily drift check</text>
+      <text x="12" y="366" class="d">approval-gated production env</text>
+      <path d="M 212 334 L 258 334" class="arrow" marker-end="url(#ah)"/>
+      <text x="222" y="327" class="lbl">OIDC</text>
+      <path d="M 212 363 L 258 363" class="arrow" marker-end="url(#ah)"/>
+      <text x="222" y="356" class="lbl">OIDC</text>
+      <rect x="262" y="298" width="232" height="38" rx="5" class="box id"/>
+      <text x="274" y="322" class="t id">ca-plan <tspan class="d">read only</tspan></text>
+      <rect x="262" y="346" width="232" height="38" rx="5" class="box id"/>
+      <text x="274" y="370" class="t id">ca-apply <tspan class="d">read / write</tspan></text>
+      <path d="M 494 317 L 504 317" class="arrow" marker-end="url(#ah)"/>
+      <path d="M 494 365 L 504 365" class="arrow" marker-end="url(#ah)"/>
+      <rect x="508" y="298" width="212" height="38" rx="5" class="box"/>
+      <text x="520" y="322" class="t">CA policies + state blob (read)</text>
+      <rect x="508" y="346" width="212" height="38" rx="5" class="box"/>
+      <text x="520" y="370" class="t">CA policies + state blob (write)</text>
+
+      <!-- footer: state -->
+      <line x1="0" y1="408" x2="720" y2="408" class="arrow" stroke-dasharray="3 5"/>
+      <text x="0" y="430" class="note">State blob: Azure Storage created once by bootstrap/, in its own resource group. Entra-only auth, account keys disabled,</text>
+      <text x="0" y="447" class="note">versioned with soft delete. This repo's state holds the client secret, which is why the storage is locked down.</text>
+    </svg>
+  </figure>
+  <p class="diagram-caption">Every arrow into the middle column is a sign-in; only the top one uses a secret. The four GitHub identities are rows of one table in <code>github.tf</code>.</p>
+
   <h2>Decisions worth defending</h2>
 
   <div class="decision"><p><b>Permissions came from the code that uses them, not from a guess.</b> I read both tools' Graph calls and granted the four application permissions they need. The two that let an app reset passwords and remove MFA methods are behind a flag that defaults to off: a leaked secret with those can take over any account in the tenant, so they should be a decision, not a default.</p></div>
