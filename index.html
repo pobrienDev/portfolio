@@ -824,16 +824,17 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
           <div class="card-links">
             <a class="repo-link" href="https://github.com/pobriendev/dartmetrics" target="_blank" rel="noopener">github.com/pobriendev/dartmetrics</a>
             <a class="demo-link" href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
+            <a class="demo-link" href="case-studies/dartmetrics.html">Case study &#8599;</a>
             <span class="demo-note">Free-tier host: first load can take a minute or two while the host wakes.</span>
           </div>
-          <p class="tagline">Live and shipped: a framework-free scoring engine, with every stat derived from the raw darts.</p>
+          <p class="tagline">Live and shipped: a framework-free scoring engine, with averages and checkouts derived from the raw darts.</p>
           <div class="stack-tags">
             <span>FastAPI</span><span>PostgreSQL</span><span>React 19</span><span>TypeScript</span><span>JWT + Argon2</span><span>Docker</span>
           </div>
           <ul>
             <li>Darts scoring platform for 501, Cricket, and Halve It against friends or bots, with a pure, framework-free scoring engine that's fully unit-tested in isolation.</li>
             <li>Every dart thrown is stored individually; averages, checkout percentage, and 180 counts are all derived from raw events rather than stored aggregates.</li>
-            <li>Database check constraints reject impossible game states independent of application code; 260+ backend tests plus Playwright end-to-end coverage.</li>
+            <li>Database check constraints reject impossible game states independent of application code; 287 backend and 67 frontend tests, plus Playwright end to end.</li>
           </ul>
           <p class="fix-note"><span class="fix-label">Recent fix</span>A Dockerfile layer-order bug reinstalled every dependency on each source edit. Reordering the layers cut rebuilds from about 31s to about 4s. <a href="https://github.com/pobrienDev/dartmetrics/pull/2" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         </div>
