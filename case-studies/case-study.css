@@ -118,3 +118,32 @@
 
   footer{ margin-top: 72px; padding: 32px 0 48px; border-top: 1px solid var(--border); font-size: 13.5px; color: var(--text-dim); }
   footer a{ color: var(--text); text-decoration: none; border-bottom: 1px solid var(--accent); }
+
+  /* ---------- Diagram ---------- */
+  .diagram{
+    margin: 18px 0 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+  .diagram svg{
+    display: block;
+    width: 100%;
+    min-width: 680px;
+    height: auto;
+    padding: 18px 18px 14px;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .diagram .col{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; fill: var(--accent); }
+  .diagram .box{ fill: var(--surface-2); stroke: var(--border); }
+  .diagram .box.id{ stroke: var(--accent-dim); }
+  .diagram .t{ font-size: 12.5px; fill: var(--text); }
+  .diagram .t.b{ font-weight: 600; }
+  .diagram .t.id{ font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+  .diagram .d{ font-size: 11.5px; fill: var(--text-dim); }
+  .diagram .lbl{ font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--accent); }
+  .diagram .arrow{ stroke: var(--text-dim); stroke-width: 1.2; fill: none; }
+  .diagram .head{ fill: var(--text-dim); }
+  .diagram .note{ font-size: 11.5px; fill: var(--text-dim); }
+  .diagram-caption{ font-size: 12.5px; color: var(--text-dim); margin: 0 0 28px; }
