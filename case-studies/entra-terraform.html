@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Case study: Entra ID infrastructure as code — Patrick O'Brien</title>
-<meta name="description" content="How I moved a Microsoft Entra ID identity layer from portal clicks to Terraform: least-privilege Graph permissions, Key Vault, locked-down remote state, and GitHub Actions planning through OIDC with no stored secrets.">
+<meta name="description" content="How I moved a Microsoft Entra ID identity layer from portal clicks to Terraform: scoped Graph permissions, Key Vault, locked-down remote state, and GitHub Actions planning through OIDC with no stored secrets.">
 <link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/entra-terraform.html">
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
@@ -12,12 +12,14 @@
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/entra-terraform.html">
 <meta property="og:title" content="Case study: Entra ID infrastructure as code">
-<meta property="og:description" content="Portal clicks to Terraform: least-privilege Graph permissions, Key Vault, locked-down remote state, and CI that plans through OIDC with no stored secrets.">
+<meta property="og:description" content="Portal clicks to Terraform: scoped Graph permissions, Key Vault, locked-down remote state, and CI that plans through OIDC with no stored secrets.">
 <meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
 <link rel="stylesheet" href="case-study.css">
 </head>
 <body>
@@ -57,7 +59,7 @@
   <ul>
     <li><b>A personal tenant only.</b> Everything runs in my own Entra ID tenant and an Azure free-tier subscription, never an employer's.</li>
     <li><b>Public from the start.</b> The repo is a portfolio piece, so it has to be public, which means no tenant, subscription, client or object IDs, no tenant domain, and no resource names that encode any of those, anywhere in the history or in CI logs.</li>
-    <li><b>Five resources, no more.</b> The plan fixed scope at a resource group, an app registration with permissions, a service principal with consent, a Key Vault for the secret, and remote state. If a sixth looked tempting, that was the signal to write the README instead.</li>
+    <li><b>Five resources, at first.</b> The plan fixed scope at a resource group, an app registration with permissions, a service principal with consent, a Key Vault for the secret, and remote state. If a sixth looked tempting, that was the signal to write the README instead.</li>
   </ul>
 
   <h2>What was built</h2>
@@ -65,9 +67,9 @@
     <thead><tr><th>Layer</th><th>What</th><th>Why it matters</th></tr></thead>
     <tbody>
       <tr><td>entra.tf</td><td>App registration, service principal, and one admin-consent grant per Graph permission</td><td>Declaring a permission is not granting it. The grant is a separate resource, so consent is code, not a portal button.</td></tr>
-      <tr><td>keyvault.tf</td><td>RBAC-mode Key Vault holding a client secret that Terraform generates and rotates every 180 days</td><td>The tools fetch the secret at runtime. Nothing sensitive lives in a config file.</td></tr>
+      <tr><td>keyvault.tf</td><td>RBAC-mode Key Vault holding a client secret that Terraform generates with a 180-day lifetime and replaces on the next apply after it expires</td><td>The secret is generated and stored by Terraform, never typed by a human or committed; operators retrieve it from Key Vault instead of the portal.</td></tr>
       <tr><td>bootstrap/</td><td>A second root module that creates a hardened storage account for state</td><td>Terraform cannot create the backend it needs to start. Something has to exist first, and this documents what and why.</td></tr>
-      <tr><td>github.tf</td><td>One table of GitHub Actions identities, each trusted through OIDC federation</td><td>CI plans every pull request with no Azure secret stored anywhere, and can plan but never apply.</td></tr>
+      <tr><td>github.tf</td><td>One table of GitHub Actions identities, each trusted through OIDC federation</td><td>CI plans every pull request from this repository (fork PRs are skipped) with no Azure secret stored anywhere, and can plan but never apply.</td></tr>
       <tr><td>.githooks/</td><td>A dependency-free pre-commit hook</td><td>Blocks state files, variable files, GUIDs, secret-shaped strings and tenant domains before they can reach a public history.</td></tr>
     </tbody>
   </table>
@@ -75,7 +77,7 @@
   <figure class="diagram" aria-labelledby="diagram-title">
     <svg viewBox="0 0 720 470" role="img" aria-labelledby="diagram-title diagram-desc">
       <title id="diagram-title">How callers authenticate through this repo's identities to Azure and Entra</title>
-      <desc id="diagram-desc">Three columns. Left: who authenticates. Middle: the identity defined in this repository. Right: what that identity can reach. The Python tools use a client secret stored in Key Vault; every GitHub Actions job uses an OIDC token and has no secret.</desc>
+      <desc id="diagram-desc">Three columns. Left: who authenticates. Middle: the identity defined in this repository. Right: what that identity can reach. The Python tools authenticate with a client secret that this repo generates and stores in Key Vault; every GitHub Actions job uses an OIDC token and has no secret.</desc>
       <defs>
         <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" class="head"/>
@@ -98,7 +100,7 @@
       <rect x="262" y="34" width="232" height="70" rx="5" class="box id"/>
       <text x="274" y="56" class="t id">graph-automation</text>
       <text x="274" y="74" class="d">app registration + service principal</text>
-      <text x="274" y="90" class="d">secret in Key Vault, 180-day rotation</text>
+      <text x="274" y="90" class="d">180-day secret, replaced on apply</text>
 
       <path d="M 494 69 L 504 69" class="arrow" marker-end="url(#ah)"/>
 
@@ -207,7 +209,7 @@ assertion subject 'repo:owner@&lt;id&gt;/entra-terraform@&lt;id&gt;:ref:refs/hea
   </figure>
   <p>I had written the credential's subject as <code>repo:owner/name:ref:refs/heads/main</code>. GitHub's newer immutable subject format embeds numeric owner and repository IDs, and the match must be exact. I changed the credential to the immutable format rather than switching the feature off: a repository <em>name</em> can be re-registered by someone else after a rename or deletion and would inherit the cloud trust, while an ID cannot be.</p>
 
-  <h3>2. Least privilege, one level too narrow</h3>
+  <h3>2. Read-only, one level too narrow</h3>
   <p>The next run signed in, then failed with a 403 reading the storage account. I had scoped the CI identity's Reader role to the state <em>container</em>, but a data source in the configuration reads the storage <em>account</em>. The fix moved one role assignment up one scope: still read-only, and with account keys disabled there is nothing at account level that unlocks the data.</p>
 
   <h3>3. CI's plan disagreed with mine</h3>
@@ -216,7 +218,7 @@ assertion subject 'repo:owner@&lt;id&gt;/entra-terraform@&lt;id&gt;:ref:refs/hea
   <h2>From a project to a foundation</h2>
   <p>Once the pattern existed, two sibling projects needed pipeline identities of their own: a <a href="https://github.com/pobrienDev/entra-credential-monitor" target="_blank" rel="noopener">daily credential monitor</a> that scans the tenant for expiring secrets, and <a href="https://github.com/pobrienDev/entra-conditional-access" target="_blank" rel="noopener">Conditional Access policies as code</a>, which needs a read-only identity for plans and drift checks and a separate write identity reachable only from an approval-gated GitHub environment. App-only identities are not subject to Conditional Access, so the one permission that can rewrite the tenant's front door had to be unreachable without a human approving a deployment.</p>
   <p>Those arrived as two more hand-written files, the same pattern written three different ways. A cleanup pass consolidated all four identities into one table: display name, which repository is trusted, which workflow contexts, which Graph permissions, which Azure roles. One set of <code>for_each</code> resources turns each row into an app registration, service principal, federated credentials, consent grants and role assignments. Adding an identity is now adding a row.</p>
-  <p>The refactor renamed every one of those resources in state, and three repositories' secrets depend on their client IDs, so recreating them was not an option. Terraform <code>moved</code> blocks recorded all thirty address changes; the plan, locally and in CI, showed thirty moves, zero to add and zero to destroy before anything was merged. The configuration shrank from 669 to 578 lines and from 19 input variables to 9, and the only runtime change was three description strings.</p>
+  <p>The refactor renamed every one of those resources in state, and three repositories' secrets depend on their client IDs, so recreating them was not an option. Terraform <code>moved</code> blocks recorded all twenty-eight address changes; the plan, locally and in CI, showed twenty-eight moves and nothing to add or destroy before anything was merged. The configuration shrank from 669 to 578 lines and from 19 input variables to 9, and the only runtime change was three description strings.</p>
 
   <h2>Outcomes</h2>
   <ul>
