@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: DartMetrics — Patrick O'Brien</title>
+<meta name="description" content="A darts scoring app in React and FastAPI that stores every dart and derives the statistics: a scoring engine with zero framework imports enforced by a test, database constraints that refuse impossible game states, row locks on every visit, 287 backend and 67 frontend tests, Playwright end to end, and a deploy that waits for green checks.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/dartmetrics.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/dartmetrics.html">
+<meta property="og:title" content="Case study: DartMetrics">
+<meta property="og:description" content="A darts scoring app that keeps every dart and derives the rest: a framework-free engine enforced by a test, database constraints on game state, row locks, 350+ tests, and a deploy gated on CI.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Full-stack</p>
+  <h1>A darts scoring app that keeps every dart and derives the rest</h1>
+  <p class="lede">Most scoring apps store a running total and a few counters, which is fine until you want a statistic nobody thought of when the schema was written. DartMetrics stores each dart as its own row, computes averages, checkout rates and high visits from those rows at query time, and keeps the rules of the game in a Python package with no framework in it, enforced by a test. It is live on a free tier, plays three games against friends or bots, and deploys only after every check passes.</p>
+  <div class="stack-tags">
+    <span>React 19 &amp; TypeScript</span><span>FastAPI</span><span>SQLAlchemy &amp; Alembic</span><span>PostgreSQL</span><span>JWT &amp; Argon2</span><span>pytest &amp; Vitest</span><span>Playwright</span><span>Docker</span>
+  </div>
+  <ul class="facts">
+    <li><b>287</b><span>backend tests, 163 of them running without a database</span></li>
+    <li><b>67</b><span>frontend tests, plus three Playwright runs through a full match</span></li>
+    <li><b>3</b><span>games: 501, Cricket and Halve It, against a friend or one of five bots</span></li>
+    <li><b>0</b><span>framework imports in the scoring package, checked by a test on every run</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>I wanted to track real games with friends and see the numbers a televised match shows: three-dart average, first-nine average, checkout percentage, how many 180s. The apps I tried stored results as summaries, so any statistic they had not planned for was gone the moment the leg ended. I also wanted the scoring rules somewhere I could test exhaustively without a browser or a database in the way, because a bust rule that is almost right is worse than none.</p>
+  <p>The result is a React front end over a FastAPI service and PostgreSQL. Players register, create guest opponents or pick a bot, and score 501, Cricket or Halve It dart by dart from a keypad. The service enforces the rules, records every dart, locks the leg while a visit is written, and answers statistics questions by reading the darts back.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>The rules live in a package that imports nothing but the standard library.</b> The scoring engine, the Cricket and Halve It variants and the bot are plain Python: dataclasses, enums, a little math and randomness. A test starts a fresh interpreter for each module, imports it, and fails if SQLAlchemy, FastAPI, Pydantic, Starlette or Alembic have been loaded as a side effect. That test exists because the rule was once broken: the bot module imported a database model to get the difficulty enum. The fix moved the enum into the package and added the test so it cannot happen quietly again.</p></div>
+
+  <div class="decision"><p><b>Every dart is a row, and the statistics are queries.</b> A dart is stored with its segment, multiplier, score, whether it was a double, whether it was thrown at a finishable score, and whether it won the leg. Three-dart average, first-nine average, high visits, 180 count, checkout percentage, best leg and win rates are all computed from those rows when asked, so a new statistic is a new query, not a migration and a backfill. One cache exists and the README says so: a per-leg state row keeps the live scoreboard fast, and the match summary's dart counts per leg read from it rather than recounting.</p></div>
+
+  <div class="decision"><p><b>The database refuses impossible games on its own.</b> Check constraints hold the rules the application should never violate, independent of the code: a remaining score cannot be negative or exactly one, a visit scores between 0 and 180, a bust leaves the score where the turn started, a checkout ends at exactly zero, the winning dart must be a double, a visit has at most three darts, a match is best of an odd number of legs. Partial unique indexes allow one profile per user and one bot per difficulty. If a bug in the service ever tries to write a wrong state, the write fails instead of the history going quietly bad.</p></div>
+
+  <div class="decision"><p><b>A visit takes a row lock.</b> Scoring a visit, letting the bot reply and undoing all select the leg's state rows for update, so two requests for the same leg serialise rather than interleave. The tests open two database connections and prove the second waits. Undo is deliberately narrow: only the latest visit of the active leg, never a completed leg, and against a bot it removes the bot's reply and the human's visit together. For 501 the score is restored from the stored turn start; for Cricket and Halve It the state is replayed from the darts that remain.</p></div>
+
+  <div class="decision"><p><b>Small, stated security choices.</b> Argon2id password hashing, HS256 bearer tokens with an eight-hour default, unknown emails checked against a dummy hash so login timing does not reveal accounts, login and registration rate limited per IP, a placeholder or short signing secret refused at startup, a Content Security Policy and frame denial on every response. The README also lists what is not there: no refresh tokens or server-side revocation, the token in local storage, rate-limit counters in process memory, and a registration endpoint that reveals whether an email exists.</p></div>
+
+  <h2>Where each statistic comes from</h2>
+  <table>
+    <thead><tr><th>Statistic</th><th>Derived from the stored darts as</th></tr></thead>
+    <tbody>
+      <tr><td>Three-dart average</td><td>Points scored divided by darts thrown, times three</td></tr>
+      <tr><td>First-nine average</td><td>The first nine darts of each leg with at least nine darts</td></tr>
+      <tr><td>Highest visit, 100+, 140+, 180s</td><td>Visit totals, with busts excluded</td></tr>
+      <tr><td>Checkout percentage</td><td>Winning darts divided by darts thrown while on a finishable score: 50, or an even number from 2 to 40</td></tr>
+      <tr><td>Best leg</td><td>Fewest darts in a leg won</td></tr>
+      <tr><td>Win rate, leg win rate</td><td>Completed matches and legs only</td></tr>
+    </tbody>
+  </table>
+  <p>Career statistics cover 501 only; Cricket and Halve It are scored and recorded but not yet summarised, since their visits do not carry a points total. The dashboard shows average, win rate, checkout percentage, 180s and highest visit; first-nine and the others are computed and tested but not yet in the interface.</p>
+
+  <h2>Testing without a browser, then with one</h2>
+  <p>The engine tests are named after the rules they pin: a bust on the third dart restores the turn start, a double one from two wins, a 170 finish is accepted, a miss never busts. They run in milliseconds with no database. The integration suite runs against PostgreSQL 16 and skips itself cleanly when no database is reachable, so a laptop run without Postgres is still a useful run. In CI the backend job applies the migrations, runs Alembic's drift check, then the full suite.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>pytest &mdash; backend suite<span class="t-note">local run, no database, output condensed</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">pytest --collect-only -q | tail -1</span>
+<span class="t-o">287 tests collected</span>
+<span class="t-p">$</span> <span class="t-c">pytest -q</span>
+<span class="t-o">app/tests/unit/test_engine.py ..........................</span>
+<span class="t-o">app/tests/unit/test_scoring_purity.py ......</span>
+<span class="t-o">app/tests/integration/test_concurrency.py ssss</span>
+<span class="t-o">...</span>
+<span class="t-hl">163 passed</span>, 124 skipped <span class="t-o">(integration tests skip without a database)</span></pre>
+  </figure>
+  <p>Three more jobs follow. The frontend job lints, runs the 67 Vitest tests, type-checks and builds. The end-to-end job boots the API and the dev server and plays a full match in Playwright, uploading traces if it fails. The Docker job builds the image, starts it, and checks both the health endpoint and that the root serves the app. Render deploys only when all checks have passed, with the database on Neon.</p>
+
+  <h2>Three fixes worth telling</h2>
+
+  <h3>A Dockerfile that reinstalled everything on every edit</h3>
+  <p>The image copied the whole backend before installing dependencies, so a one-line change to a route invalidated the dependency layer and every rebuild started from scratch. The fix copies the project file first, installs dependencies, then copies the source, with the package itself installed without dependencies at the end. The pull request reports two local builds: about 31 seconds before, about 4 seconds after, with the dependency layer cached. It also added four tests that read the Dockerfile as text and fail if the layer order regresses. The build has since moved to <code>uv</code>; the ordering rule is the same.</p>
+
+  <h3>A dependency pointing the wrong way</h3>
+  <p>The bot module needed the difficulty levels and imported them from the players' database model, which quietly pulled SQLAlchemy into the scoring package. Nothing broke, which is the problem: the rule that the engine stays framework-free had no enforcement. The fix moved the enum into the scoring package and added the fresh-interpreter test described above, so the next violation fails CI instead of passing unnoticed.</p>
+
+  <h3>Thirty-seven commits of audit fixes</h3>
+  <p>A month after going public I audited the whole repository and landed the fixes in one reviewed pull request. Among them: Halve It's visit history marked every visit as halved instead of judging each from the running total, undo and the bot reply were not taking the row lock that visit scoring took, a failed startup request signed the user out even when the server was only waking, so now only a 401 drops the token, and one profile per user was enforced only in code until a partial unique index made the database enforce it. The backend suite went from 265 to 287 tests and the frontend from 47 to 67 in that change.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>Three games playable end to end against friends or bots, live, with every dart on record.</li>
+    <li>Statistics that are queries over history, so adding one never means touching stored data.</li>
+    <li>Rules enforced three times over: in a pure engine with named tests, in the service with row locks, and in the database with constraints.</li>
+    <li>287 backend tests, 67 frontend tests and a Playwright match on every push and pull request, with a deploy that only follows green checks.</li>
+  </ul>
+
+  <h2>What I would do differently next</h2>
+  <ul>
+    <li>A coverage gate in CI and Dependabot for the three package ecosystems, both of which the ticket system has and this does not.</li>
+    <li>Refresh tokens with server-side revocation, and the token out of local storage.</li>
+    <li>Career statistics for Cricket and Halve It, and the first-nine average on the dashboard, since both are already computed.</li>
+    <li>Let two registered users play each other; today an opponent is a guest profile or a bot.</li>
+    <li>Land the open simplification pull request, which fixes a dart dropped while a visit was submitting and removes two columns the code no longer needs.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/dartmetrics" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/dartmetrics#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://dartmetrics.onrender.com" target="_blank" rel="noopener">Live demo &#8599;</a>
+    <a href="https://github.com/pobrienDev/dartmetrics/blob/main/docs/GAME_MODES.md" target="_blank" rel="noopener">Game rules &#8599;</a>
+    <a href="https://github.com/pobrienDev/dartmetrics/pull/2" target="_blank" rel="noopener">PR: Dockerfile layers &#8599;</a>
+    <a href="https://github.com/pobrienDev/dartmetrics/pull/4" target="_blank" rel="noopener">PR: framework-free engine &#8599;</a>
+    <a href="https://github.com/pobrienDev/dartmetrics/pull/5" target="_blank" rel="noopener">PR: the audit &#8599;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
