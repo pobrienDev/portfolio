@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: Medicaid Enrollment Pipeline — Patrick O'Brien</title>
+<meta name="description" content="A scheduled pipeline that loads public Medicaid and CHIP enrollment data into PostgreSQL: why a rerun changes nothing, what the real dataset did to the plan, and how it was built.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/medicaid-enrollment-pipeline.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/medicaid-enrollment-pipeline.html">
+<meta property="og:title" content="Case study: Medicaid Enrollment Pipeline">
+<meta property="og:description" content="A scheduled pipeline that loads public Medicaid and CHIP enrollment data into PostgreSQL, built so a rerun changes nothing.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Data pipeline</p>
+  <h1>A Medicaid enrollment pipeline that can run twice and change nothing</h1>
+  <p class="lede">Everything else on this site is identity automation or a web app. This is the piece that was missing: a small data pipeline, built end to end on real public health data. Every week it pulls state Medicaid and CHIP enrollment from a CMS API, validates it, and upserts it into PostgreSQL, and it is built so that a rerun, a bad batch, or a crash halfway through cannot leave the table wrong.</p>
+  <div class="stack-tags">
+    <span>Python</span><span>pandas</span><span>PostgreSQL</span><span>SQLAlchemy</span><span>pytest</span><span>GitHub Actions</span>
+  </div>
+  <ul class="facts">
+    <li><b>11,220</b><span>source rows extracted on each run</span></li>
+    <li><b>5,661</b><span>rows loaded: one per state and month</span></li>
+    <li><b>49</b><span>tests, 98% coverage, real Postgres in CI</span></li>
+    <li><b>0</b><span>rows added by running it again</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>CMS publishes monthly Medicaid and CHIP enrollment for every state and the District of Columbia as open data, back to September 2013. It is a good stand-in for the recurring data pull most teams have somewhere: a source that someone downloads by hand, tidies in a spreadsheet, and pastes into the place people actually query.</p>
+  <p>Doing that by hand has three predictable failures. The same month gets loaded twice. A malformed file gets loaded anyway. Or the job stops partway and nobody can say afterwards what state the table is in. The pipeline is a single command, <code>python -m pipeline.run</code>, and each of its design decisions exists to rule out one of those.</p>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>Validate before anything is written.</b> The transform is a pure function: a DataFrame in, a DataFrame out, no I/O. Its output goes through a validation gate that rejects an empty batch, unparseable dates, state codes that are not two capital letters, negative counts, and duplicate keys, and reports every problem at once rather than the first. Only data that passes reaches the database. The table's own <code>CHECK</code> constraints and primary key are a second line of defense, not the first.</p></div>
+
+  <div class="decision"><p><b>One transaction, staging then upsert.</b> The cleaned rows are written to a staging table and merged into the real one with <code>INSERT &hellip; ON CONFLICT (state_code, report_month) DO UPDATE</code>, and both steps share a transaction. A crash leaves nothing half-written, and a second run finds every key already present and updates it in place. One of the integration tests proves the rollback: a batch that violates a constraint leaves the previously loaded rows exactly as they were.</p></div>
+
+  <div class="decision"><p><b>The updated report wins, by rule and not by row order.</b> Most state-months appear in the source twice, once as a preliminary report and once as an updated one, often with different totals. The transform reads the source's own final-report flag and keeps the updated row, so the result does not depend on the order the API happens to return rows in. The newest month has only a preliminary figure, and that is kept as it is.</p></div>
+
+  <div class="decision"><p><b>Every run leaves a row, including the ones that fail.</b> Before extracting anything the run inserts a row into <code>pipeline_runs</code> with status <code>running</code>. When it ends, that row gets the finish time, the status, how many rows were extracted and loaded, and the error if there was one. The process then exits non-zero on failure, so the scheduler shows a red run and the question &ldquo;did last week's load work?&rdquo; is a SQL query.</p></div>
+
+  <div class="decision"><p><b>Tests may only empty a database whose name ends in <span class="mono">_test</span>.</b> The integration tests truncate the tables they use. They connect with a separate URL and skip, with the reason printed, if the database name does not end in <code>_test</code>. Running the suite on a machine that also holds loaded data cannot wipe it.</p></div>
+
+  <div class="decision"><p><b>Keep what arrived.</b> Each extract is saved untouched before it is transformed. When a run fails validation, the evidence is a file on disk rather than a response that no longer exists.</p></div>
+
+  <h2>What a run looks like</h2>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>scheduled run<span class="t-note">GitHub Actions, 10 Nov 2026; log condensed</span></figcaption>
+    <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python -m pipeline.run</span>
+18:53:40 INFO  pipeline: run 1 started (source_type=api)
+18:53:44 INFO  pipeline.extract: fetched 220 rows (offset=11000)
+18:53:44 INFO  pipeline.extract: saved raw copy: data/enrollment_raw_20261110T185344Z.csv (11220 rows)
+<span class="t-o">18:53:45 INFO  pipeline: extracted 11220 rows, loaded 5661</span></pre>
+  </figure>
+  <p>Three consecutive runs against a local database, two through the API and one through the CSV fallback, each recorded in the audit table. The enrollment table held 5,661 rows after the first and after the third.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>pipeline_runs<span class="t-note">local Postgres, 10 Nov 2026</span></figcaption>
+    <pre tabindex="0"> run_id | status  | rows_extracted | rows_loaded | error | secs
+--------+---------+----------------+-------------+-------+------
+      1 | success |          11220 |        5661 |       |  3.2
+      2 | success |          11220 |        5661 |       |  2.8
+      3 | success |          11220 |        5661 |       |  0.9</pre>
+  </figure>
+
+  <h2>Three things the plan got wrong</h2>
+  <p>The project started from a written plan with a schema, module outlines and a test list. Three of its assumptions did not survive the real dataset and the real tooling, and each one changed the code.</p>
+  <ol>
+    <li><b>It assumed one row per state and month.</b> In the release it was built against, 5,559 of 5,661 state-months had two rows, preliminary and updated, and the totals differed in 3,485 of them. The plan's <code>drop_duplicates(keep="last")</code> would have produced the right answer only because the API happens to list the preliminary row first. The transform now chooses on the final-report flag, and a test feeds it both orders.</li>
+    <li><b>It assumed the CSV fallback had a stable address.</b> The catalog's download link is named for the month's release, so it changes every month and a hard-coded fallback would have gone stale with the next release. The datastore API serves the same rows as CSV from a fixed endpoint, and the fallback uses that, through the same retrying session as the API path.</li>
+    <li><b>It let the tests share the database.</b> The planned test fixture truncated the tables at whatever <code>DATABASE_URL</code> pointed to. Locally the only database was the one real runs load into, so running the integration tests there would have emptied it. That is where the <code>_test</code> rule above came from.</li>
+  </ol>
+  <p>A smaller one in the same spirit: an unset repository secret reaches a workflow as an empty string, not as a missing variable, so the configuration check rejects blank values as well as absent ones. Otherwise the first sign of a missing secret is a confusing connection error.</p>
+
+  <h2>How it was built</h2>
+  <p>This project was built with an AI coding assistant, Claude Code, working from that written plan, in about a day. The assistant wrote most of the module and test code and ran the checks against the live API. I directed the build and set up the hosted database, the repository secrets and the schedule. I am stating that plainly so a reader knows how this one was made.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>One command extracts, validates and loads the full history: 51 jurisdictions, September 2013 to July 2026 as of the October 2026 release, in a few seconds.</li>
+    <li>Rerunning is safe by construction, and shown rather than claimed: three consecutive runs through two different source paths left the same 5,661 rows.</li>
+    <li>49 tests at 98% coverage. The unit tests need no network or database; the integration tests run the load and the whole orchestrator against a real PostgreSQL 16 service on every push.</li>
+    <li>A weekly scheduled workflow loads into a hosted Postgres, with a concurrency guard so two loads cannot overlap. Its first run loaded 5,661 rows and recorded itself as run 1.</li>
+  </ul>
+
+  <h2>What I would do differently next</h2>
+  <ul>
+    <li>Store whether each figure is preliminary or final. The table keeps the best available number for each month but does not say which kind it is, and an analyst comparing recent months should be able to tell.</li>
+    <li>Reload a rolling window of recent months instead of the full history. &ldquo;Only new months&rdquo; would be wrong for this source, because earlier months are revised when preliminary figures become final.</li>
+    <li>Send failures somewhere a person will see them. A failed scheduled run currently produces a red mark and a GitHub email; a Teams or Slack webhook would reach whoever owns the data.</li>
+    <li>Pin dependency versions. The requirements give lower bounds only, so the build picked up a new major version of pandas on its first install. It worked, but that should be a decision, not an accident.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/medicaid-enrollment-pipeline" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/medicaid-enrollment-pipeline/actions" target="_blank" rel="noopener">CI and scheduled runs &#8599;</a>
+    <a href="https://data.medicaid.gov/dataset/6165f45b-ca93-5bb5-9d06-db29c692a360" target="_blank" rel="noopener">Source dataset &#8599;</a>
+    <a href="entra-stale-accounts.html">Stale accounts case study &rarr;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
