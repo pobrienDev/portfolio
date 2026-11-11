@@ -308,7 +308,9 @@
   .track-filter button:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Only the selected track is shown; "All" shows everything */
   .project-grid[data-show="identity"] .project-card.fs,
-  .project-grid[data-show="fs"] .project-card:not(.fs){ display: none; }
+  .project-grid[data-show="identity"] .project-card.data,
+  .project-grid[data-show="fs"] .project-card:not(.fs),
+  .project-grid[data-show="data"] .project-card:not(.data){ display: none; }
   .track-filter .count{ color: var(--text-dim); margin-left: 4px; }
   .project-grid{
     display: grid;
@@ -675,6 +677,7 @@
       <span class="lbl">show</span>
       <button type="button" data-track="all" aria-pressed="true">All</button>
       <button type="button" data-track="identity" aria-pressed="false">Identity &amp; cloud</button>
+      <button type="button" data-track="data" aria-pressed="false">Data pipelines</button>
       <button type="button" data-track="fs" aria-pressed="false">Full-stack</button>
       <span class="count" id="trackCount" aria-live="polite"></span>
     </div>
@@ -810,6 +813,28 @@ nina@contoso.onmicrosoft.com   Never Nina    true     never         never
 sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
 
 <span class="t-o">2 stale account(s) past a 90-day threshold.</span></pre>
+        </figure>
+      </div>
+
+      <div class="project-card wide data">
+        <h3>Medicaid Enrollment Pipeline</h3>
+        <a class="repo-link" href="https://github.com/pobriendev/medicaid-enrollment-pipeline" target="_blank" rel="noopener">github.com/pobriendev/medicaid-enrollment-pipeline</a>
+        <p class="tagline">A scheduled extract, validate and load of public Medicaid and CHIP enrollment data into PostgreSQL, safe to rerun and audited on every run.</p>
+        <div class="stack-tags">
+          <span>Python</span><span>pandas</span><span>PostgreSQL</span><span>SQLAlchemy</span><span>GitHub Actions</span><span>pytest</span>
+        </div>
+        <ul>
+          <li>Pulls state-level Medicaid and CHIP enrollment from the CMS open data API with paging, timeouts, and retry with backoff on throttling and server errors, then cleans it with pandas. A CSV download of the same dataset is the fallback source.</li>
+          <li>Safe to rerun: the load is a staging table plus <span class="mono">INSERT &hellip; ON CONFLICT</span> in one transaction, keyed on state and month, so a second run changes nothing and a crash leaves nothing half-written. Validation runs first, and bad data fails the run before the table is touched.</li>
+          <li>CMS publishes most months twice, preliminary then updated; the transform keeps the updated figure, so 11,220 source rows load as 5,661. Every run records its status, row counts, and any error in an audit table. 49 tests, including integration tests against a real Postgres in CI, and a weekly scheduled run in GitHub Actions into a hosted Postgres.</li>
+        </ul>
+        <figure class="terminal">
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>scheduled run<span class="t-note">GitHub Actions log, 10 Nov 2026; timestamps shortened, paging lines trimmed</span></figcaption>
+          <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">python -m pipeline.run</span>
+18:53:40 INFO  pipeline: run 1 started (source_type=api)
+18:53:44 INFO  pipeline.extract: fetched 220 rows (offset=11000)
+18:53:44 INFO  pipeline.extract: saved raw copy: data/enrollment_raw_20261110T185344Z.csv (11220 rows)
+<span class="t-o">18:53:45 INFO  pipeline: extracted 11220 rows, loaded 5661</span></pre>
         </figure>
       </div>
 
