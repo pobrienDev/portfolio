@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study: An event-driven joiner, mover, leaver pipeline — Patrick O'Brien</title>
+<meta name="description" content="An HR export lands in storage and Azure Functions create, update or offboard the Microsoft Entra ID accounts to match: event-driven, idempotent, running on a managed identity with no stored credentials, all defined in Terraform.">
+<link rel="canonical" href="https://pobriendev.github.io/portfolio/case-studies/entra-jml-pipeline.html">
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+<meta name="theme-color" content="#10141A">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://pobriendev.github.io/portfolio/case-studies/entra-jml-pipeline.html">
+<meta property="og:title" content="Case study: An event-driven joiner, mover, leaver pipeline">
+<meta property="og:description" content="Entra ID account lifecycle driven by the HR record: Azure Functions, a queue, a managed identity and no stored credentials, with every step safe to run twice.">
+<meta property="og:image" content="https://pobriendev.github.io/portfolio/assets/og-card-2026-11.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"></noscript>
+<link rel="stylesheet" href="case-study.css">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="wrap">
+    <a class="name" href="../index.html">Patrick O'Brien</a>
+    <nav>
+      <a href="../index.html#projects">Projects</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#contact">Contact</a>
+      <a class="nav-resume" href="../assets/Patrick_OBrien_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<article>
+  <p class="eyebrow">Case study &middot; Identity lifecycle automation</p>
+  <h1>Account lifecycle driven by the HR record, with nothing to run and no credentials to store</h1>
+  <p class="lede">My onboarding CLI cut account setup from 20 or 30 minutes to one or two, but somebody still has to run it, it authenticates with a client secret, and it has no answer for a person who changes teams. I rebuilt it as a service. An HR export lands in storage, and Azure Functions create, update or offboard the Microsoft Entra ID accounts to match, as a managed identity, in my own lab tenant with made-up employees.</p>
+  <div class="stack-tags">
+    <span>Azure Functions</span><span>Microsoft Graph API</span><span>Terraform</span><span>Python</span><span>Event Grid</span><span>Managed identity</span><span>GitHub Actions (OIDC)</span>
+  </div>
+  <ul class="facts">
+    <li><b>0</b><span>stored credentials: no secret, storage key or connection string</span></li>
+    <li><b>223</b><span>tests, none of which touch a network</span></li>
+    <li><b>4</b><span>Graph permissions, each traced to a call the code makes</span></li>
+    <li><b>2</b><span>identities: one runs the pipeline, one can only deploy it</span></li>
+  </ul>
+
+  <h2>The problem</h2>
+  <p>Account lifecycle done by hand fails in three different ways. A new hire waits on day one. Someone who changed teams keeps the access they no longer need, because nobody thinks to remove it. Someone who left stays signed in until a person remembers to act. My <a href="employee-provisioning-tool.html">provisioning CLI</a> fixed the speed of the first and the last, but it is still a command a person runs, it has no mover step at all, and behind it sits a client secret with tenant-wide write access.</p>
+  <p>The goal was to take the person out of the loop without taking the judgement out: the same Graph logic, triggered by the HR record instead of by me, with nothing stored that could leak, and built so that running any part of it twice is harmless.</p>
+
+  <h2>How it works</h2>
+  <figure class="diagram" aria-labelledby="diagram-title">
+    <svg viewBox="0 0 720 214" role="img" aria-labelledby="diagram-title diagram-desc">
+      <title id="diagram-title">The path from an HR export to a change in Entra ID</title>
+      <desc id="diagram-desc">Five boxes in a row: the hr-feed blob container, the parser function, the jml-events queue, the processor function, and Microsoft Graph, which the processor reaches as a managed identity. Below the parser is the snapshot of the last export; below the queue is the poison queue; below the processor is the audit table.</desc>
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" class="head"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="34" width="128" height="64" rx="5" class="box"/>
+      <text x="12" y="58" class="t id">hr-feed</text>
+      <text x="12" y="78" class="d">blob container</text>
+      <path d="M 128 66 L 144 66" class="arrow" marker-end="url(#ah)"/>
+
+      <rect x="148" y="34" width="128" height="64" rx="5" class="box id"/>
+      <text x="160" y="58" class="t b">Parser</text>
+      <text x="160" y="78" class="d">Event Grid trigger</text>
+      <path d="M 276 66 L 292 66" class="arrow" marker-end="url(#ah)"/>
+
+      <rect x="296" y="34" width="128" height="64" rx="5" class="box"/>
+      <text x="308" y="58" class="t id">jml-events</text>
+      <text x="308" y="78" class="d">one per change</text>
+      <path d="M 424 66 L 440 66" class="arrow" marker-end="url(#ah)"/>
+
+      <rect x="444" y="34" width="128" height="64" rx="5" class="box id"/>
+      <text x="456" y="58" class="t b">Processor</text>
+      <text x="456" y="78" class="d">queue trigger</text>
+      <path d="M 572 66 L 588 66" class="arrow" marker-end="url(#ah)"/>
+
+      <rect x="592" y="34" width="128" height="64" rx="5" class="box"/>
+      <text x="604" y="58" class="t b">Microsoft Graph</text>
+      <text x="604" y="78" class="d">managed identity</text>
+
+      <path d="M 212 98 L 212 144" class="arrow" marker-start="url(#ah)" marker-end="url(#ah)"/>
+      <text x="220" y="126" class="lbl">diff</text>
+      <rect x="148" y="148" width="128" height="56" rx="5" class="box"/>
+      <text x="160" y="171" class="t id">snapshot</text>
+      <text x="160" y="190" class="d">the last export</text>
+
+      <path d="M 360 98 L 360 144" class="arrow" marker-end="url(#ah)"/>
+      <text x="368" y="120" class="lbl">after 5</text>
+      <text x="368" y="134" class="lbl">failures</text>
+      <rect x="296" y="148" width="128" height="56" rx="5" class="box"/>
+      <text x="308" y="171" class="t id">poison queue</text>
+      <text x="308" y="190" class="d">raises an alert</text>
+
+      <path d="M 508 98 L 508 144" class="arrow" marker-end="url(#ah)"/>
+      <text x="516" y="126" class="lbl">every action</text>
+      <rect x="444" y="148" width="128" height="56" rx="5" class="box"/>
+      <text x="456" y="171" class="t id">audit table</text>
+      <text x="456" y="190" class="d">who, what, result</text>
+    </svg>
+  </figure>
+  <p class="diagram-caption">Every resource in the picture is defined in Terraform. Neither function holds a key to anything: storage, the queue, the table, telemetry and Graph are all reached as the same managed identity.</p>
+  <table>
+    <thead><tr><th>Event</th><th>In the HR export</th><th>What the pipeline does</th></tr></thead>
+    <tbody>
+      <tr><td>Join</td><td>An employee ID appears</td><td>Creates the account with a collision-safe UPN, sets department, title and hire date, adds the department&rsquo;s groups, sets the manager</td></tr>
+      <tr><td>Move</td><td>Department, title or manager changes</td><td>Updates the attributes, adds the new role&rsquo;s groups and then removes the old ones, updates the manager</td></tr>
+      <tr><td>Leave</td><td>Someone drops off the feed or is marked terminated</td><td>Disables sign-in and revokes sessions first, then removes the managed groups and direct licenses, then stamps the leave date</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Run it twice, nothing changes</h2>
+  <p>That is the property the design is built around, and it holds at two levels. The parser queues only what differs from the last export, so a repeat upload queues nothing. And if a message is delivered twice anyway, every step in the processor reads the directory first and acts only on the difference.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>the same files, twice<span class="t-note">from the lab tenant; made-up employees</span></figcaption>
+    <pre tabindex="0"><span class="t-p">#</span> <span class="t-c">day 1, 20 people: first run, then again</span>
+<span class="t-o">Summary: 84 done, 0 would, 0 skipped, 0 failed</span>
+<span class="t-hl">Summary: 0 done, 0 would, 84 skipped, 0 failed</span>
+
+<span class="t-p">#</span> <span class="t-c">day 2 uploaded to the feed, then uploaded again</span>
+<span class="t-o">parser: hr_export_day2.csv -&gt; 2 leave, 4 move; 0 row(s) rejected</span>
+<span class="t-hl">parser: hr_export_day2.csv -&gt; no changes; 0 row(s) rejected</span></pre>
+  </figure>
+
+  <h2>Decisions worth defending</h2>
+
+  <div class="decision"><p><b>A queue between the two functions, and no retry logic in mine.</b> One export can mean hundreds of changes, each of them several Graph calls that can be throttled or fail on their own. With one message per person, a failure belongs to that person alone. The processor contains no retry loops and swallows no errors: it raises, the queue retries the message five times, then sets it aside in a poison queue where it is visible and nothing is lost, while everyone else&rsquo;s changes go through.</p></div>
+
+  <div class="decision"><p><b>No secret anywhere, including the places secrets usually hide.</b> Azure issues the Function app its tokens at runtime, so there is no client secret. The storage account has account keys disabled, so there is no connection string either. Application Insights accepts telemetry only from Entra ID-authenticated callers. Nothing in the code, the configuration, the Terraform state or the repository would be worth stealing.</p></div>
+
+  <div class="decision"><p><b>Two identities, because deploying code and changing the directory are different powers.</b> The identity the pipeline runs as can create and disable accounts across the tenant. The one GitHub Actions deploys as can push code to a single Function app and nothing else: no Graph permissions, no storage access, no rights over the infrastructure. Its federated credential trusts only the repository&rsquo;s approval-gated environment, so a job that skips the approval cannot get a token. Terraform is applied by a person.</p></div>
+
+  <div class="decision"><p><b>People are matched on the HR system&rsquo;s ID, never on name.</b> Names change and collide; the employee ID does not. A name change in HR does not create a second account, and two people called J. Lee do not fight over one.</p></div>
+
+  <div class="decision"><p><b>A diff against a snapshot, because a file cannot say who is missing from it.</b> The pipeline has to know who left. Comparing each export with the last one turns &ldquo;no longer listed&rdquo; into an event. It also means a row rejected for a typo is carried forward as last known, so a mistake in one row never reads as that person resigning.</p></div>
+
+  <div class="decision"><p><b>A brake on mass change.</b> A truncated export looks, to a diff, exactly like most of the company leaving. If one file would offboard more than ten percent of the people the pipeline knows, nothing in it is processed, the snapshot is left alone, and a person decides.</p></div>
+
+  <div class="decision"><p><b>It removes only what it granted.</b> The mover and the leaver take a membership away only if the department map names the group. Anything else on an account was put there by someone for a reason the pipeline cannot see. Those memberships, and any directory roles, are recorded as follow-ups for a person.</p></div>
+
+  <div class="decision"><p><b>Lock out first, clean up second.</b> The order comes straight from the CLI. A leaver is disabled and has their sessions revoked before anything else happens, and if the disable fails nothing further is attempted. The leave date is stamped last, only when every step before it worked, which is also how a repeat run knows the job is finished.</p></div>
+
+  <h2>The guardrails</h2>
+  <table>
+    <thead><tr><th>Guardrail</th><th>What it prevents</th></tr></thead>
+    <tbody>
+      <tr><td>Mass-change brake</td><td>A truncated or wrong file offboarding half the company</td></tr>
+      <tr><td>Row-level validation</td><td>One bad row stopping everyone else, or reading as a departure</td></tr>
+      <tr><td>Managed groups only</td><td>Undoing access the pipeline never granted</td></tr>
+      <tr><td>Dry run</td><td>Finding out what a change does by making it. Every step is recorded as &ldquo;would&rdquo;, and the snapshot is not advanced</td></tr>
+      <tr><td>Poison queue and alert</td><td>A change that failed five times going unnoticed</td></tr>
+      <tr><td>Audit table</td><td>Not being able to say what was done to whom, and which file caused it</td></tr>
+      <tr><td>Disabled, never deleted</td><td>An offboarding that cannot be reversed</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What deploying found that tests could not</h2>
+  <p>Every change went through a pull request. For the two stages that could only be proven in Azure, the branch was deployed to the lab and tested end to end before it was reviewed. Four things came out of running it for real that no unit test would have shown.</p>
+  <p><b>The standard Terraform resources assume account keys, twice.</b> The table resource makes a key-only call on every refresh, so it failed with a 403 on a storage account with keys disabled. The Function app resource went further: in managed-identity mode it writes a storage connection string with an empty key into the app&rsquo;s settings. That setting takes precedence over the identity-based ones, so the host failed every start against its own storage. The app had sat empty since the first stage, so it only showed when code was deployed to it. Both resources are now created through the Azure management API, and a <code>moved</code> block made the second an in-place update instead of a rebuild.</p>
+  <p><b>A permission that had not taken effect yet.</b> Stamping the leave date needed one more Graph permission. It was granted two minutes before the first offboarding ran, and both leavers&rsquo; final step was refused. By then both had been locked out and removed from their groups. The queue retried, each retry skipped what was already done, and the third attempt stamped the date. Nobody intervened. It is the cleanest demonstration of the design I could have asked for, and it was not planned.</p>
+  <figure class="terminal">
+    <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>audit log &mdash; one leaver, three attempts<span class="t-note">from the lab tenant; condensed</span></figcaption>
+    <pre tabindex="0">18:29:29  disable_account    <span class="t-o">done</span>
+18:29:29  revoke_sessions    <span class="t-o">done</span>
+18:29:29  remove_from_group  <span class="t-o">done</span>     jml-dept-finance
+18:29:29  stamp_leave_date   <span class="t-err">failed</span>   403 Authorization_RequestDenied
+
+18:30:20  disable_account    <span class="t-hl">skipped</span>  already disabled
+18:30:20  stamp_leave_date   <span class="t-err">failed</span>   403 Authorization_RequestDenied
+
+18:30:59  disable_account    <span class="t-hl">skipped</span>  already disabled
+18:30:59  stamp_leave_date   <span class="t-o">done</span>     2026-11-15T18:30:59Z</pre>
+  </figure>
+  <p><b>Two people offered the same address.</b> The first dry run against the tenant offered <code>jlee@</code> to both Jordan Lee and Jamie Lee, because in a dry run the first account does not exist when the second is checked. A real run has the same hole for a few seconds after each create. Addresses handed out earlier in a run now count as taken, and a retry that finds its own account behind a &ldquo;taken&rdquo; address recognises it instead of creating a second one.</p>
+  <p><b>A dry run that used up what it saw.</b> The parser saved the snapshot in dry-run mode, so uploading the same file after switching dry run off would have produced nothing. That one was caught by reading the code before dry run was tested, not by a failure.</p>
+
+  <h2>Outcomes</h2>
+  <ul>
+    <li>Uploading a CSV creates accounts with no manual step. Event Grid called the parser six seconds after the upload, and the deployed pipeline has since created, moved and offboarded accounts in the lab, with each change read back through Graph to check.</li>
+    <li>The plan&rsquo;s three failure scenarios were run for real, not only in tests. A malformed row was rejected without touching that person. A nonexistent manager failed five times, was audited and moved to the poison queue, and the alert fired. A file with half the company missing was refused, and every account was still enabled afterwards.</li>
+    <li>Six pull requests, each reviewed before merging, and CI now gates every merge. The deploy workflow signs in through OIDC as an identity that can do exactly one thing, and waits for an approval before it does it.</li>
+    <li>The managed identity needed four Graph permissions, and one I had expected to need turned out to be unnecessary. It holds nothing it does not use.</li>
+  </ul>
+
+  <h2>What I would do differently in production</h2>
+  <ul>
+    <li>Read from the HR system&rsquo;s API or Entra&rsquo;s inbound provisioning API instead of a CSV drop. The file is a stand-in for a feed.</li>
+    <li>Issue a Temporary Access Pass to each new hire. Today a new account gets a random password that nobody is shown, which is safe and not yet useful.</li>
+    <li>Decide what a rehire means. A returning leaver&rsquo;s disabled account is deliberately left alone, which is the cautious answer and not a complete one.</li>
+    <li>Put the storage account and the Function app behind private endpoints, and have a second person approve any change to the department map, since that file decides who gets what access.</li>
+    <li>Tighten the alert. It evaluates every fifteen minutes, which is fine for a lab and slow for a failed offboarding.</li>
+  </ul>
+
+  <div class="links">
+    <a href="https://github.com/pobrienDev/entra-jml-pipeline" target="_blank" rel="noopener">Repository &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-jml-pipeline#readme" target="_blank" rel="noopener">README &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-jml-pipeline/pull/4" target="_blank" rel="noopener">PR: the host that could not start &#8599;</a>
+    <a href="https://github.com/pobrienDev/entra-jml-pipeline/pull/5" target="_blank" rel="noopener">PR: movers, leavers and the lab test &#8599;</a>
+    <a href="employee-provisioning-tool.html">Provisioning tool case study &rarr;</a>
+  </div>
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="../index.html#projects">&larr; Back to projects</a> &nbsp;&middot;&nbsp; &copy; <span id="year"></span> Patrick O'Brien
+  </div>
+</footer>
+<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>
