@@ -756,18 +756,18 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
           <a class="repo-link" href="https://github.com/pobriendev/entra-jml-pipeline" target="_blank" rel="noopener">github.com/pobriendev/entra-jml-pipeline</a>
           <a class="demo-link" href="case-studies/entra-jml-pipeline.html">Case study &#8599;</a>
         </div>
-        <p class="tagline">The provisioning tool below, rebuilt as a service: an HR export lands in storage and Azure Functions create, update or offboard the Entra ID accounts to match. Built and run in a personal lab tenant with made-up employees.</p>
+        <p class="tagline">The provisioning tool below, rebuilt as a service: an HR export lands in storage and Azure Functions create, update or offboard the Entra ID accounts to match. Built and run in a personal sandbox tenant with made-up employees.</p>
         <div class="stack-tags">
           <span>Azure Functions</span><span>Microsoft Graph API</span><span>Terraform</span><span>Python</span><span>Event Grid</span><span>GitHub Actions (OIDC)</span>
         </div>
         <ul>
           <li>Event-driven joiner, mover, leaver pipeline: a parser function diffs each HR export against the last and queues one message per person who changed; a processor carries each out through Microsoft Graph as a managed identity. No client secret, no storage keys, no connection strings, and every resource defined in Terraform.</li>
           <li>Every step reads before it writes, so a repeated upload or a redelivered message changes nothing. A failed step raises, the queue retries it and then sets it aside in a poison queue that raises an alert, and every action lands in an audit table.</li>
-          <li>Guardrails for the ways an HR feed goes wrong: a brake that refuses a file which would offboard more than 10% of staff, row-level validation so a typo never reads as a resignation, and a rule that only groups the pipeline manages are ever removed. 220+ tests with Graph faked, and the same failure scenarios run for real in the lab.</li>
+          <li>Guardrails for the ways an HR feed goes wrong: a brake that refuses a file which would offboard more than 10% of staff, row-level validation so a typo never reads as a resignation, and a rule that only groups the pipeline manages are ever removed. 220+ tests with Graph faked, and the same failure scenarios run for real in the sandbox.</li>
         </ul>
         <p class="fix-note"><span class="fix-label">Recent fix</span>The first deployment&rsquo;s host failed every start with a 403 from its own storage: the Terraform resource for the app writes a connection string with an empty key in managed-identity mode, which overrides the identity settings. The app is now defined through the Azure management API. <a href="https://github.com/pobrienDev/entra-jml-pipeline/pull/4" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>the same export, uploaded twice<span class="t-note">from the lab tenant; made-up employees</span></figcaption>
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>the same export, uploaded twice<span class="t-note">from the sandbox tenant; made-up employees</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">az storage blob upload --container-name hr-feed --file hr_export_day2.csv</span>
 <span class="t-o">parser: hr_export_day2.csv -&gt; 2 leave, 4 move; 0 row(s) rejected</span>
 processor: move E1006 done
@@ -784,6 +784,7 @@ processor: leave E1012 done
           <a class="repo-link" href="https://github.com/pobriendev/employee-provisioning-tool" target="_blank" rel="noopener">github.com/pobriendev/employee-provisioning-tool</a>
           <a class="demo-link" href="case-studies/employee-provisioning-tool.html">Case study &#8599;</a>
         </div>
+        <p class="tagline">In production at work, where it cut onboarding and offboarding from 20&ndash;30 minutes to 1&ndash;2 minutes per user.</p>
         <div class="stack-tags">
           <span>Python</span><span>Microsoft Graph API</span><span>YAML</span>
         </div>
@@ -945,7 +946,7 @@ sam@contoso.onmicrosoft.com    Stale Sam     true     2026-01-01    229
         <p>
           I work in IT and automate the identity layer &mdash; and the infrastructure underneath it.
           At work, that is Python and PowerShell tooling on the Microsoft Graph API that automates onboarding and
-          offboarding in a Microsoft 365 tenant of 400+ users across 100+ properties. On my own time, I codified that
+          offboarding in a Microsoft 365 tenant of 400+ users across 100+ communities. On my own time, I codified that
           same identity layer as Terraform in a personal sandbox tenant &mdash; app registrations, Conditional Access
           policies with guardrails, and monitors for expiring credentials and stale accounts &mdash; and built and
           shipped two full-stack apps in React and FastAPI.
