@@ -694,7 +694,7 @@
           <span>Terraform</span><span>Microsoft Entra ID</span><span>Python</span><span>GitHub Actions (OIDC)</span><span>Policy as code</span>
         </div>
         <ul>
-          <li>Seven Conditional Access policies as reviewed, version-controlled Terraform in a personal sandbox tenant, all deployed in report-only, to be enforced one at a time after validation against sign-in logs: MFA for all users, phishing-resistant auth for admins, legacy auth blocked, MFA for Azure management, sign-in and user risk, and protected security-info registration. Every policy excludes the break-glass group.</li>
+          <li>Seven Conditional Access policies as reviewed, version-controlled Terraform in a personal sandbox tenant, all deployed in report-only, to be enforced one at a time after validation against sign-in logs: MFA for all users, phishing-resistant auth for admins, legacy auth blocked, MFA for Azure management, MFA on risky sign-ins, a password change for risky users, and protected security-info registration. Every policy excludes the break-glass group.</li>
           <li>Every change is a pull request with a redacted plan and a Python guardrail check that fails closed: no policy without the break-glass exclusion, new policies start report-only, no all-users-all-apps block, no deletes without an explicit flag. 40+ guardrail tests.</li>
           <li>Apply waits for a required reviewer, and the write identity&rsquo;s federated credential trusts only that approval gate, so a job that skips it cannot get a token. A daily drift job opens one issue when someone edits a policy in the portal and closes it when the code matches again.</li>
         </ul>
@@ -736,7 +736,7 @@ Plan: 0 to add, 1 to change, 0 to destroy.
         </ul>
         <p class="fix-note"><span class="fix-label">Recent fix</span>CI&rsquo;s plan disagreed with mine on identical code and state: the config set each resource&rsquo;s owner to whoever ran Terraform, so CI proposed making itself the owner of everything. The owner is now an explicit input. <a href="https://github.com/pobrienDev/entra-terraform/pull/1" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
-          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">captured after the first apply (7 resources); the config has grown since</span></figcaption>
+          <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>terraform plan &mdash; drift detection<span class="t-note">resource group deleted by hand; 7 resources at the time</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">terraform plan</span>
 azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted&gt;/resourceGroups/rg-entra-iac]
 
@@ -765,7 +765,7 @@ azurerm_resource_group.main: Refreshing state... [id=/subscriptions/&lt;redacted
           <li>Every step reads before it writes, so a repeated upload or a redelivered message changes nothing. A failed step raises, the queue retries it and then sets it aside in a poison queue that raises an alert, and every action lands in an audit table.</li>
           <li>Guardrails for the ways an HR feed goes wrong: a brake that refuses a file which would offboard more than 10% of staff, row-level validation so a typo never reads as a resignation, and a rule that only groups the pipeline manages are ever removed. 220+ tests with Graph faked, and the same failure scenarios run for real in the sandbox.</li>
         </ul>
-        <p class="fix-note"><span class="fix-label">Recent fix</span>The first deployment&rsquo;s host failed every start with a 403 from its own storage: the Terraform resource for the app writes a connection string with an empty key in managed-identity mode, which overrides the identity settings. The app is now defined through the Azure management API. <a href="https://github.com/pobrienDev/entra-jml-pipeline/pull/4" target="_blank" rel="noopener">See the PR &#8599;</a></p>
+        <p class="fix-note"><span class="fix-label">Recent fix</span>The first deployment&rsquo;s host failed every start with a 403 from its own storage: the Terraform resource for the app writes a connection string with an empty key in managed-identity mode, which overrides the identity settings. The app is still defined in Terraform, now through the <code>azapi</code> provider, which calls the Azure management API directly. <a href="https://github.com/pobrienDev/entra-jml-pipeline/pull/4" target="_blank" rel="noopener">See the PR &#8599;</a></p>
         <figure class="terminal">
           <figcaption><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>the same export, uploaded twice<span class="t-note">from the sandbox tenant; made-up employees</span></figcaption>
           <pre tabindex="0"><span class="t-p">$</span> <span class="t-c">az storage blob upload --container-name hr-feed --file hr_export_day2.csv</span>
